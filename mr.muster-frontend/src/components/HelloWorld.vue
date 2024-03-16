@@ -1,5 +1,15 @@
 <template>
   <div class="hello">
+    <div v-if="userEmail" strong>
+      Hello, we sent a verification email to your email {{ userEmail }}
+      <br />
+      <button @click="handleLogout">Log Out</button>
+    </div>
+    <div v-else>
+      <router-link to="/login" class="button">Log in</router-link>
+      <br />
+      <router-link to="/register" class="button">Sign up</router-link>
+    </div>
     <h1>{{ msg }}</h1>
     <p>
       For a guide and recipes on how to configure / customize this project,<br>
@@ -31,10 +41,39 @@
 </template>
 
 <script>
+import { ref, onMounted } from 'vue';
+import { auth } from '../firebase'; // Adjust the path as necessary
+import { logout } from '../services/AuthenticationService'; // Import the logout method
+
 export default {
   name: 'HelloWorld',
   props: {
     msg: String
+  },
+  setup() {
+    const userEmail = ref(null); // Reactive reference to store the user's email
+
+    onMounted(() => {
+      auth.onAuthStateChanged(user => {
+        if (user) {
+          // User is signed in
+          userEmail.value = user.email;
+        } else {
+          // No user is signed in
+          userEmail.value = null;
+        }
+      });
+    });
+
+    const handleLogout = async () => {
+      try {
+        await logout(); // Call the logout method from AuthenticationService
+      } catch (error) {
+        console.error('Logout Failed', error);
+      }
+    };
+
+    return { userEmail, handleLogout };
   }
 }
 </script>
