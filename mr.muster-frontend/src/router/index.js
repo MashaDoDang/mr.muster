@@ -15,6 +15,4 @@ const router = createRouter({
   routes,
 });
 
-console.log('Router setup', routes);
-
 export default router;

@@ -1,4 +1,5 @@
 <template>
+    <img alt="Vue logo" src="../assets/logo.png">
   <div class="hello">
     <div v-if="userEmail" strong>
       Hello, we sent a verification email to your email {{ userEmail }}
