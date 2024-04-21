@@ -53,7 +53,7 @@
         </form>
         <div style="display: flex; justify-content: space-evenly; gap: 5px;">
             <button 
-                @click="resetPasswordRef = false; 
+                @click="closeModal(); 
                 registerModeRef = false;" 
                 class="btn btn-primary mb-3" 
                 type="button" 
@@ -109,6 +109,8 @@ watch(() => props.registerMode, (newVal) => {
 });
 
 function closeModal() {
+  resetPasswordRef.value = false;
+  registerModeRef.value = false;
   emit('close');
 }
 
