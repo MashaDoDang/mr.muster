@@ -10,7 +10,7 @@ const signup = (email, password) => {
 const login = (email, password) => {
   return signInWithEmailAndPassword(auth, email, password);
 };
-
+ 
 // Sign out function
 const logout = () => {
   return signOut(auth);
