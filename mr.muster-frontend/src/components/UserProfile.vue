@@ -1,7 +1,5 @@
 <template>
-    <AppHeader>
-        <div class="sign-up"><a href="#">Sign up</a></div>
-    </AppHeader>
+    <AppHeader/>
     <div class="profile-container container p-3 my-3 mt-5">
         <div class="user-container">
             <p class="username">Username</p>
@@ -37,7 +35,7 @@
                         <img src="../assets/mock-img2.jpg" class="w-100 shadow-1-strong rounded mb-4" />
                     </div>
                     <div class="col-lg-4 mb-4 mb-lg-0">
-                        <img src="../assets/mock-img3.jpg" class="w-100 shadow-1-strong rounded mb-4" />
+                        <img src="../assets/mock-img3.jpg" class="w-100 shadow-1-strong rounded mb-4" @click="navigateToPost()" style="cursor: pointer;"/>
                         <img src="../assets/mock-img4.png" class="w-100 shadow-1-strong rounded mb-4" />
                     </div>
                     <div class="col-lg-4 mb-4 mb-lg-0">
@@ -56,7 +54,7 @@
                         <img src="../assets/mock-img2.jpg" class="w-100 shadow-1-strong rounded mb-2" />
                     </div>
                     <div class="col-lg-4 mb-2 mb-lg-0">
-                        <img src="../assets/mock-img3.jpg" class="w-100 shadow-1-strong rounded mb-2" />
+                        <img src="../assets/mock-img3.jpg" class="w-100 shadow-1-strong rounded mb-4" @click="navigateToPost()" style="cursor: pointer;"/>
                         <img src="../assets/mock-img4.png" class="w-100 shadow-1-strong rounded mb-2" />
                     </div>
                     <div class="col-lg-4 mb-2 mb-lg-0">
@@ -69,14 +67,15 @@
     </div>
 </template>
 
-<script>
-    import AppHeader from "./AppHeader.vue";
-    export default {
-    name: "view-post",
-    components: {
-        AppHeader,
-    },
-    };
+<script setup>
+import AppHeader from "./AppHeader.vue";
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
+
+function navigateToPost() {
+    router.push('/view-post');
+}
 </script>
 
 <style scoped>

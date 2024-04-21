@@ -9,7 +9,7 @@
   <nav>
     <div class="top-nav">
       <div class="logo">
-        <img src="../assets/cat-logo.png" alt="logo" @click="navigateToHome"/>
+        <img src="../assets/cat-logo.png" alt="logo" @click="navigateToHome()"/>
       </div>
         <div class="buttons-container" v-if="!userState">
             <button class="btn log-button" @click="openLoginModal()">Log in</button>
@@ -17,7 +17,7 @@
         </div>
         <div class="buttons-container" style="gap: 20px;" v-else>
           <div class="user-container">
-            <button @click="handleButtonClick" class="button-image">
+            <button @click="navigateToUserProfile()" class="button-image">
               <img src="../assets/mock-user.png" class="image-button">
             </button>
           </div>
@@ -46,15 +46,15 @@
   const openLogin = ref(false);
   const registerModeRef = ref(false);
 
-function openLoginModal() {
-  openLogin.value = true;
-  registerModeRef.value = false;
-}
+  function openLoginModal() {
+    openLogin.value = true;
+    registerModeRef.value = false;
+  }
 
-function openRegisterModal() {
-  openLogin.value = true;
-  registerModeRef.value = true;
-}
+  function openRegisterModal() {
+    openLogin.value = true;
+    registerModeRef.value = true;
+  }
 
   onAuthStateChanged(auth, user => {
     userState.value = !!user;  // shorthand to convert truthy/falsy to boolean
@@ -62,6 +62,10 @@ function openRegisterModal() {
 
   function navigateToHome() {
     router.push('/');
+  }
+
+  function navigateToUserProfile() {
+    router.push('/user-profile')
   }
 
   function closeModal() {

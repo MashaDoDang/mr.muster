@@ -18,7 +18,7 @@
           <img src="../assets/mock-img2.jpg" class="img" />
         </div>
         <div class="col">
-          <img src="../assets/mock-img3.jpg" class="img" @click="navigateToPost" />
+          <img src="../assets/mock-img3.jpg" class="img" @click="navigateToPost()" />
           <img src="../assets/mock-img4.png" class="img" />
         </div>
         <div class="col">
