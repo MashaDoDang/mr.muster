@@ -2,14 +2,43 @@
     <div class="login-overlay">
       <div class="login-modal">
         <form>
-          <input type="text" class="form-control mb-3" placeholder="E-mail" v-model="email">
-          <div v-if="!resetPasswordRef" style="display: grid;">
-            <input type="password" class="form-control mb-3" placeholder="Password" v-model="password">
+          <input 
+            type="text" 
+            class="form-control mb-3" 
+            placeholder="Username" 
+            v-model="username" 
+            v-if="registerModeRef"
+          >  
+          <input 
+            type="email" 
+            class="form-control mb-3" 
+            placeholder="E-mail" 
+            v-model="email"
+          >
+          <input 
+            type="password" 
+            class="form-control mb-3" 
+            placeholder="Password" 
+            v-model="password" 
+            v-if="!resetPasswordRef"
+          >
+          <input 
+            type="password" 
+            class="form-control mb-3" 
+            placeholder="Confirm password" 
+            v-model="confirmPassword" 
+            v-if="!resetPasswordRef && registerModeRef"
+          >
+          <div v-if="!resetPasswordRef && !registerModeRef" style="display: grid;">
             <button class="btn btn-primary mb-3" type="button" @click="handleLogin">
                 Log in
             </button>
-            <button class="btn btn-primary mb-3" type="button" @click="resetPasswordRef = true;">Forgot Password?</button>
-            <button class="btn btn-primary mb-3" type="button">Create a new account</button>
+            <button class="btn btn-primary mb-3" type="button" @click="resetPasswordRef = true;">
+                Forgot Password?
+            </button>
+            <button class="btn btn-primary mb-3" type="button" @click="registerModeRef = true">
+                Create a new account
+            </button>
             <div class="separator my-3"></div>
             <div style="display: grid;">
                 <button class="btn btn-primary mb-3" type="button" @click="signInWithGoogle()">
@@ -22,9 +51,35 @@
             </div>
           </div>
         </form>
-        <div v-if="resetPasswordRef" style="display: flex; justify-content: space-evenly; gap: 5px;">
-            <button @click="resetPasswordRef = false;" class="btn btn-primary mb-3" type="button" style="flex: 1;">Cancel</button>
-            <button @click="resetPassword()" class="btn btn-primary mb-3" type="button" style="flex: 1;">Send</button>
+        <div style="display: flex; justify-content: space-evenly; gap: 5px;">
+            <button 
+                @click="resetPasswordRef = false; 
+                registerModeRef = false;" 
+                class="btn btn-primary mb-3" 
+                type="button" 
+                style="flex: 1;" 
+                v-if="resetPasswordRef || registerModeRef"
+            >
+                Cancel
+            </button>
+            <button 
+                @click="resetPassword()" 
+                class="btn btn-primary mb-3" 
+                type="button" 
+                style="flex: 1;" 
+                v-if="resetPasswordRef"
+            >
+                Send
+            </button>
+            <button 
+                @click="registerUser()" 
+                class="btn btn-primary mb-3" 
+                type="submit" 
+                style="flex: 1;" 
+                v-if="registerModeRef"
+            >
+                Create Account
+            </button>
         </div>
       </div>
     </div>
@@ -33,14 +88,17 @@
 <script setup>
 import { ref, defineEmits } from 'vue';
 import { auth } from "../firebase";
-import { signInWithEmailAndPassword, sendPasswordResetEmail, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { signInWithEmailAndPassword, sendPasswordResetEmail, GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword } from "firebase/auth";
 
 const emit = defineEmits(['close']);
 
 const email = ref('');
 const password = ref('');
+const confirmPassword = ref('');
 const resetPasswordRef = ref(false);
 const provider = new GoogleAuthProvider();
+const registerModeRef = ref(false);
+const username = ref('')
 
 function closeModal() {
   emit('close');
@@ -55,6 +113,59 @@ async function handleLogin() {
     const errorMessage = getFirebaseErrorMessage(error);
     alert(errorMessage); // Display the error message to the user
   }
+}
+
+
+
+async function resetPassword() {
+  if (email.value.trim() === '') {
+    alert("Please enter your email address.");
+    return;
+  }
+  try {
+    await sendPasswordResetEmail(auth, email.value);
+    alert("Reset password email sent. Please check your inbox.");
+    closeModal();
+  } catch (error) {
+    console.error('Password reset error:', error);
+    const errorMessage = getFirebaseErrorMessage(error);
+    alert(errorMessage); // Display the error message to the user // Show error message to the user
+  }
+}
+
+async function signInWithGoogle() {
+    try {
+        await signInWithPopup(auth, provider);
+        closeModal(); // Close modal on successful login
+    } catch (error) {
+        console.error('Login error:', error);
+        alert(getFirebaseErrorMessage(error)); // Display the error message to the user
+    }
+}
+
+function registerUser() {
+  if (password.value !== confirmPassword.value) {
+    alert("Passwords do not match.");
+    return;
+  }
+
+  if (password.value === '' || confirmPassword.value === '' || email.value === '') {
+    alert("Please fill out all fields.");
+    return;
+  }
+
+  createUserWithEmailAndPassword(auth, email.value, password.value)
+    .then((userCredential) => {
+      // User created successfully
+      // Here you can close the modal or redirect the user as needed
+      console.log('User registered:', userCredential.user);
+      closeModal();
+      alert(`Welcome ${username.value}! \n\nYour account has been created!`);
+      })
+    .catch((error) => {
+      console.error('Registration error:', error);
+      alert(getFirebaseErrorMessage(error)); // Display the error message to the user
+    });
 }
 
 function getFirebaseErrorMessage(error) {
@@ -85,31 +196,6 @@ function getFirebaseErrorMessage(error) {
   }
 }
 
-async function resetPassword() {
-  if (email.value.trim() === '') {
-    alert("Please enter your email address.");
-    return;
-  }
-  try {
-    await sendPasswordResetEmail(auth, email.value);
-    alert("Reset password email sent. Please check your inbox.");
-    closeModal();
-  } catch (error) {
-    console.error('Password reset error:', error);
-    const errorMessage = getFirebaseErrorMessage(error);
-    alert(errorMessage); // Display the error message to the user // Show error message to the user
-  }
-}
-
-async function signInWithGoogle() {
-    try {
-        await signInWithPopup(auth, provider);
-        closeModal(); // Close modal on successful login
-    } catch (error) {
-        console.error('Login error:', error);
-        alert(getFirebaseErrorMessage(error)); // Display the error message to the user
-    }
-}
 </script>
 
 
