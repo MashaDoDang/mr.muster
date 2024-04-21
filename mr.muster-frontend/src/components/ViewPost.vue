@@ -2,14 +2,7 @@
     <head>
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,200,0,0" />
     </head>
-    <Header>
-        <div class="user-container">
-            <p>@username</p>
-            <button @click="handleButtonClick" class="button-image">
-                <img src="../assets/mock-user.png" class="image-button">
-            </button>
-        </div>
-    </Header>
+    <AppHeader/>
     <div class="post-container container my-3 mt-5">
         <div class="pic-arrow">
             <a href="#" class="material-symbols-outlined arrow">arrow_back</a>
@@ -18,7 +11,7 @@
         <div class="comment-section">
             <div class="top-comment-section">
                 <div class="name-top-com-section">
-                    <p class="sub-header">Name Grid</p>
+                    <p class="sub-AppHeader">Name Grid</p>
                     <div class="name-bot-com-section">
                         <p>25 comments</p>
                         <p>10</p>
@@ -72,11 +65,11 @@
 </template>
 
 <script>
-import Header from "./Header.vue";
+import AppHeader from "./AppHeader.vue";
 export default {
   name: "view-post",
   components: {
-    Header,
+    AppHeader,
   },
 };
 </script>
@@ -225,7 +218,7 @@ p + p,
     margin-left: 2vw;
 }
 
-.sub-header {
+.sub-AppHeader {
     font-size: 2em;
     margin: 1vh 0;
 }

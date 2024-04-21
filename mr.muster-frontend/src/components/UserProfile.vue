@@ -1,7 +1,7 @@
 <template>
-    <Header>
+    <AppHeader>
         <div class="sign-up"><a href="#">Sign up</a></div>
-    </Header>
+    </AppHeader>
     <div class="profile-container container p-3 my-3 mt-5">
         <div class="user-container">
             <p class="username">Username</p>
@@ -70,11 +70,11 @@
 </template>
 
 <script>
-    import Header from "./Header.vue";
+    import AppHeader from "./AppHeader.vue";
     export default {
     name: "view-post",
     components: {
-        Header,
+        AppHeader,
     },
     };
 </script>
