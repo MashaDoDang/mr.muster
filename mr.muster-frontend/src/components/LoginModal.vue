@@ -86,9 +86,13 @@
 </template>
   
 <script setup>
-import { ref, defineEmits } from 'vue';
+import { ref, defineEmits, watch, defineProps } from 'vue';
 import { auth } from "../firebase";
 import { signInWithEmailAndPassword, sendPasswordResetEmail, GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword } from "firebase/auth";
+
+const props = defineProps({
+  registerMode: Boolean
+});
 
 const emit = defineEmits(['close']);
 
@@ -97,8 +101,12 @@ const password = ref('');
 const confirmPassword = ref('');
 const resetPasswordRef = ref(false);
 const provider = new GoogleAuthProvider();
-const registerModeRef = ref(false);
+const registerModeRef = ref(props.registerMode);
 const username = ref('')
+
+watch(() => props.registerMode, (newVal) => {
+  registerModeRef.value = newVal;
+});
 
 function closeModal() {
   emit('close');

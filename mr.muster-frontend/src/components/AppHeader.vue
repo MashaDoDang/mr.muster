@@ -12,8 +12,8 @@
         <img src="../assets/cat-logo.png" alt="logo" @click="navigateToHome"/>
       </div>
         <div class="buttons-container" v-if="!userState">
-            <button class="btn log-button" @click="openLogin=true">Log in</button>
-            <button class="btn sign-button">Get started</button>
+            <button class="btn log-button" @click="openLoginModal()">Log in</button>
+            <button class="btn sign-button" @click="openRegisterModal()">Get started</button>
         </div>
         <div class="buttons-container" style="gap: 20px;" v-else>
           <div class="user-container">
@@ -30,7 +30,7 @@
       <input class="search-input" type="search" placeholder="Search type...">
     </div>
   </nav>
-  <LoginModal v-if="openLogin" @close="closeModal"/>
+  <LoginModal v-if="openLogin" :registerMode="registerModeRef" @close="closeModal"/>
 </template>
 
 <script setup>
@@ -44,6 +44,17 @@
   const router = useRouter();
   const userState = ref(false);
   const openLogin = ref(false);
+  const registerModeRef = ref(false);
+
+function openLoginModal() {
+  openLogin.value = true;
+  registerModeRef.value = false;
+}
+
+function openRegisterModal() {
+  openLogin.value = true;
+  registerModeRef.value = true;
+}
 
   onAuthStateChanged(auth, user => {
     userState.value = !!user;  // shorthand to convert truthy/falsy to boolean
