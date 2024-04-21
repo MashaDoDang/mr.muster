@@ -81,6 +81,17 @@
                 Create Account
             </button>
         </div>
+        <div class="separator my-3" v-if="registerModeRef"></div>
+        <button 
+            class="btn btn-primary mb-3" 
+            type="button" 
+            style="width: 100%;" 
+            @click="signInWithGoogle()" 
+            v-if="registerModeRef"
+        >
+                    <!-- <img src="@/assets/google-icon.png" alt="Google sign-in" class="google-icon"> -->
+                    Sign in with Google
+        </button>
       </div>
     </div>
 </template>
