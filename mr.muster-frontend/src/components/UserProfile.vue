@@ -1,25 +1,24 @@
 <template>
-    <AppHeader/>
     <div class="profile-container container p-3 my-3 mt-5">
         <div class="user-container">
-            <p class="username">Username</p>
+            <p class="username">{{ name }}</p>
             <button @click="handleButtonClick" class="button-image">
-                <img src="../assets/mock-user.png" class="image-button">
+                <img :src="userIcon" class="image-button">
             </button>
         </div>
         <div class="stat-container">
             <div class="stat">
-                <p>25</p>
+                <p>{{ follows }}</p>
                 <hr>
                 <p>Following</p>
             </div>
             <div class="stat">
-                <p>25</p>
+                <p>{{ followedBy }}</p>
                 <hr>
                 <p>Followed</p>
             </div>
             <div class="stat">
-                <p>25</p>
+                <p>{{ likes }}</p>
                 <hr>
                 <p>Likes</p>
             </div>
@@ -35,7 +34,7 @@
                         <img src="../assets/mock-img2.jpg" class="w-100 shadow-1-strong rounded mb-4" />
                     </div>
                     <div class="col-lg-4 mb-4 mb-lg-0">
-                        <img src="../assets/mock-img3.jpg" class="w-100 shadow-1-strong rounded mb-4" @click="navigateToPost()" style="cursor: pointer;"/>
+                        <img src="../assets/mock-img3.jpg" class="w-100 shadow-1-strong rounded mb-4" />
                         <img src="../assets/mock-img4.png" class="w-100 shadow-1-strong rounded mb-4" />
                     </div>
                     <div class="col-lg-4 mb-4 mb-lg-0">
@@ -54,7 +53,7 @@
                         <img src="../assets/mock-img2.jpg" class="w-100 shadow-1-strong rounded mb-2" />
                     </div>
                     <div class="col-lg-4 mb-2 mb-lg-0">
-                        <img src="../assets/mock-img3.jpg" class="w-100 shadow-1-strong rounded mb-4" @click="navigateToPost()" style="cursor: pointer;"/>
+                        <img src="../assets/mock-img3.jpg" class="w-100 shadow-1-strong rounded mb-2" />
                         <img src="../assets/mock-img4.png" class="w-100 shadow-1-strong rounded mb-2" />
                     </div>
                     <div class="col-lg-4 mb-2 mb-lg-0">
@@ -67,15 +66,40 @@
     </div>
 </template>
 
-<script setup>
-import AppHeader from "./AppHeader.vue";
-import { useRouter } from 'vue-router';
-
-const router = useRouter();
-
-function navigateToPost() {
-    router.push('/view-post');
-}
+<script>
+    import { mockFirestore } from "../database/mockFirebaseFunctions";
+    export default {
+    name: "user-profile",
+    data() {
+        return {
+            followedBy: null,
+            follows: null,
+            likes: null,
+            name: null,
+            userIcon: null,
+        };
+    },
+    created() {
+        this.fetchFollowerCount("username1");
+    },
+    methods: {
+        async fetchFollowerCount(userId) {
+            const docSnapshot = await mockFirestore.collection("users").doc(userId).get();
+            const userData = docSnapshot.data();
+            this.followedBy = userData ? userData.followedBy.length : null;
+            this.follows = userData ? userData.follows.length : null;
+            this.likes = userData ? userData.likes : null;
+            this.name = userData ? userData.name : null;
+            if (userData && userData.userIcon) {
+                import(`../assets/${userData.userIcon}`).then((image) => {
+                    this.userIcon = image.default;
+            });
+            } else {
+                this.userIcon = null;
+            }
+        },
+    },
+    };
 </script>
 
 <style scoped>
@@ -83,8 +107,6 @@ function navigateToPost() {
         --font-family: 'Lexend', sans-serif;
         --font-weight: 200;
         --font-size: 1.1em;
-        --sign-up-margin-bottom: 3vh;
-        --link-color: #f5bc6c;
         --stat-width: 10vw;
         --grids-container-width: 50%;
         --user-grids-margin-right: 3vw;
@@ -93,14 +115,6 @@ function navigateToPost() {
         font-family: var(--font-family);
         font-weight: var(--font-weight);
         font-size: var(--font-size);
-    }
-    .sign-up {
-        margin-bottom: var(--sign-up-margin-bottom);
-    }
-    .sign-up a{
-        color: var(--link-color);
-        font-weight: var(--font-weight);
-        text-decoration: none;
     }
     .user-container p {
         margin-bottom: 1vh;

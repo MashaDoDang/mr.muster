@@ -1,6 +1,5 @@
 <template>
   <div>
-    <AppHeader/>
     <div class="container">
       <div class="text-container">
         <h1>Create your own grid</h1>
@@ -8,7 +7,7 @@
       </div>
       <div class="upload-container">
         <button class="btn upload-button">Upload image</button>
-        <p>or paste URL</p>
+        <a href="#">or paste URL</a>
       </div>
     </div>
     <div class="pic-grid">
@@ -32,13 +31,9 @@
 
 <script>
 import { useRouter } from 'vue-router';
-import AppHeader from './AppHeader.vue';
 
 export default {
   name: "landing-page",
-  components: {
-    AppHeader,
-  },
   setup() {
     const router = useRouter();
 
@@ -82,6 +77,7 @@ export default {
   background-color: #b73c91;
   border-color: #b73c91;
   color: white;
+  border-radius: 40px;
   font-weight: 200;
   font-size: 1.5em;
   width: 230px;
@@ -90,12 +86,24 @@ export default {
   background-color: #d172b4;
   border-color: #d172b4;
 }
+
+.upload-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.upload-container a{
+  text-decoration: none;
+  color: white;
+  font-family:  'Lexend', sans-serif;
+  font-size: 1.2em;
+}
+
 .container {
   width: 100vw;
   height: 40vh;
-  margin: 10vh 10vw 0 7vw;
+  margin: 10vh 10vw 10vh 7vw;
   padding: 5vh 5vw;
-  /*transform: translate(0, 8vh);*/
   background-image: linear-gradient(to right, rgb(149, 122, 177), rgb(157, 53, 168));
   border-radius: 20px;
   color: white;
@@ -115,7 +123,7 @@ export default {
   text-align: left;
 }
 .pic-grid {
-  margin: 7vw;
+  margin: 0 7vw;
 }
 .col {
   display: flex;
