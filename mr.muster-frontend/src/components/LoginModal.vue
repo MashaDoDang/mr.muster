@@ -42,7 +42,7 @@
             <div class="separator my-3"></div>
             <div style="display: grid;">
                 <button class="btn btn-primary mb-3" type="button" @click="signInWithGoogle()">
-                    <!-- <img src="@/assets/google-icon.png" alt="Google sign-in" class="google-icon"> -->
+                    <img src="@/assets/google-icon.webp" alt="Google sign-in" class="google-icon">
                     Sign in with Google
                 </button>
                 <button class="btn btn-primary mb-3" type="button" @click="closeModal()">
@@ -53,8 +53,7 @@
         </form>
         <div style="display: flex; justify-content: space-evenly; gap: 5px;">
             <button 
-                @click="closeModal(); 
-                registerModeRef = false;" 
+                @click="resetPasswordRef = false; registerModeRef = false;" 
                 class="btn btn-primary mb-3" 
                 type="button" 
                 style="flex: 1;" 
@@ -89,7 +88,7 @@
             @click="signInWithGoogle()" 
             v-if="registerModeRef"
         >
-                    <!-- <img src="@/assets/google-icon.png" alt="Google sign-in" class="google-icon"> -->
+                    <img src="@/assets/google-icon.webp" alt="Google sign-in" class="google-icon">
                     Sign in with Google
         </button>
       </div>
