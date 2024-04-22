@@ -2,59 +2,32 @@
     <head>
         <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,200,0,0" />
     </head>
-    <AppHeader/>
-    <div class="post-container container my-3 mt-5">
+    <div class="post-container container">
         <div class="pic-arrow">
             <a href="#" class="material-symbols-outlined arrow">arrow_back</a>
-            <img src="../assets/mock-img3.jpg">
+            <img :src="content">
         </div>
         <div class="comment-section">
             <div class="top-comment-section">
                 <div class="name-top-com-section">
-                    <p class="sub-AppHeader">Name Grid</p>
+                    <p class="sub-header">{{ title }}</p>
                     <div class="name-bot-com-section">
-                        <p>25 comments</p>
-                        <p>10</p>
+                        <p>{{ commentsAmount }} comments</p>
+                        <p> {{ likes }}</p>
                         <a href="#" class="material-symbols-outlined like-icon">favorite</a>
                     </div>
                 </div>
                 <div class="user-comment user-container">
-                    <p>@username</p>
+                    <p>@{{ gridAuthor }}</p>
                     <button @click="handleButtonClick" class="button-image">
-                        <img src="../assets/mock-user1.png" class="image-button">
+                        <img :src="authorIcon" class="image-button"> 
                     </button>
                 </div>
             </div>
+            
             <div class="comment-box">
-                <div class="user-comment">
-                    <div class="user">
-                        <button @click="handleButtonClick" class="button-image">
-                            <img src="../assets/mock-user3.png" class="image-button">
-                        </button>
-                    </div>
-                    <div class="comment">
-                        <div class="comment-content">
-                            <p class="username">username</p>
-                            <p>bla bla bla bla bla bla bla bla</p>
-                        </div>
-                        <p>20.03.2024 14:03</p>
-                    </div>
-                </div>
-
-                <div class="user-comment">
-                    <div class="user">
-                        <button @click="handleButtonClick" class="button-image">
-                            <img src="../assets/mock-user2.png" class="image-button">
-                        </button>
-                    </div>
-                    <div class="comment">
-                        <div class="comment-content">
-                            <p class="username">username</p>
-                            <p>bla bla bla bla bla bla </p>
-                        </div>
-                        <p>20.03.2024 14:23</p>
-                    </div>
-                </div>
+                <p v-if="!renderComments().length">Be the first to leave the comment!</p>
+                <Comment v-for="item in renderComments()" :key="item.comment.id" :comment="item.comment" :user="item.user" :userID="item.userID"/>
             </div>
             <div class="comment-input-group">
                 <input type="text" class="comment-input" placeholder="Add comment">
@@ -65,11 +38,125 @@
 </template>
 
 <script>
-import AppHeader from "./AppHeader.vue";
+import Comment from "./Comment.vue";
+import { mockFirestore } from "../database/mockFirebaseFunctions";
+//import { all } from "core-js/fn/promise";
 export default {
   name: "view-post",
   components: {
-    AppHeader,
+    Comment,
+  },
+  data() {
+    return {
+        title: null,
+        likes: null,
+        commentsAmount: null,
+        gridAuthor: null,
+        authorIcon: null,
+        content: "",
+        commentsIDs: [],
+        allComments: {},
+        commentUsersIDs: {},
+        allUsers: {},
+    };
+  },
+  created() {
+    this.fetchGridData("gridID1");
+  },
+  watch: {
+        allComments: {
+            handler(newVal) {
+            if (Object.keys(newVal).length) {
+                this.renderComments();
+            }
+            },
+            deep: true
+        },
+        allUsers: {
+            handler(newVal) {
+                if (Object.keys(newVal).length) {
+                    this.renderUsers();
+                }
+            },
+            deep: true
+        },
+        commentUsersIDs: {
+            handler(newVal) {
+                if (Object.keys(newVal).length) {
+                    this.renderUsers();
+                }
+            },
+            deep: true
+        },
+    },
+  methods: {
+    async fetchGridData(gridId) {
+        const docSnapshot = await mockFirestore.collection("grids").doc(gridId).get();
+        const gridData = docSnapshot.data();
+        this.likes = gridData ? gridData.likes.length : null;
+        this.commentsAmount = gridData ? gridData.comments.length : null;
+        this.title = gridData ? gridData.title : null;
+        this.gridAuthor = gridData ? gridData.author : null;
+        if (gridData && gridData.content) {
+            import(`../assets/${gridData.content}`).then((image) => {
+                this.content = image.default;
+        });
+        } else {
+            this.content = null;
+        }
+        this.commentsIDs = gridData ? gridData.comments : [];
+        await this.fetchComments(this.commentsIDs);
+        await this.fetchUsers(Object.values(this.commentUsersIDs));
+        await this.fetchAuthorIcon();
+    },
+    
+    async fetchComments(commentsIDs) {
+        if (commentsIDs) {
+            for (const commentID of commentsIDs) {
+                const commentSnapshot = await mockFirestore.collection("comments").doc(commentID).get();
+                const commentData = commentSnapshot.data();
+                this.allComments[commentID] = commentData;
+                this.commentUsersIDs[commentID] = commentData.author;
+            }
+        } else {
+            this.allComments = {};
+        }
+    },
+    async fetchUsers(usersIDs) {
+        if (usersIDs) {
+            for (const userID of usersIDs) {
+                const userSnapshot = await mockFirestore.collection("users").doc(userID).get();
+                const userData = userSnapshot.data();
+                this.allUsers[userID] = userData;
+            }
+        } else {
+            this.allUsers = {};
+        }
+    },
+    async fetchAuthorIcon() {
+        const docSnapshot = await mockFirestore.collection("users").doc(this.gridAuthor).get();
+        const authorData = docSnapshot.data();
+        if (authorData && authorData.userIcon) {
+            import(`../assets/${authorData.userIcon}`).then((image) => {
+                this.authorIcon = image.default;
+            });
+        } else {
+            this.authorIcon = null;
+        }
+    },
+    renderComments() {
+        return Object.keys(this.allComments).map(commentID => {
+            const comment = this.allComments[commentID];
+            const userID = this.commentUsersIDs[commentID];
+            const user = this.allUsers[userID];
+            return {comment, user, userID};
+        });
+    },
+    renderUsers() {
+        return Object.keys(this.allUsers).map(commentID => {
+            return this.allUsers[this.commentUsersIDs[commentID]];
+        });
+    }
   },
 };
 </script>
@@ -92,29 +179,6 @@ a {
     color: black;
 }
 
-.user-container,
-.user-container p {
-    font-size: 1em;
-    color: white;
-}
-
-.user-container {
-    font-weight: 100;
-    padding-bottom: 10px;
-}
-
-.user-container p {
-    font-weight: var(--font-weight);
-    margin-bottom: 0;
-}
-
-.user-container:hover,
-.user-container:focus {
-    box-shadow: var(--hover);
-    transform: translateY(-0.25em);
-}
-
-.user-comment,
 .comment-content,
 .top-comment-section,
 .name-bot-com-section,
@@ -123,34 +187,14 @@ a {
     justify-content: center;
 }
 
-.user-comment {
-    margin: 2vh 0;
-    justify-content: left;
-}
-
-.user-comment p,
 .comment p {
     color: black;
     text-align: left;
 }
 
-.button-image {
-    background-color: transparent;
-    border: none;
-    cursor: pointer;
-    padding: 0;
-    display: inline-block;
-}
-
-.image-button {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    object-fit: cover;
-}
-
 .post-container {
     padding: 0;
+    margin: 7vh 7vw;
     width: 100%;
     height: auto;
     display: flex;
@@ -160,12 +204,12 @@ a {
     display: flex;
     justify-content: space-evenly;
     align-items: flex-start;
-    margin-right: 5px;
 }
 .pic-arrow img {
     width: 30vw;
     height: auto;
     object-fit: cover;
+    margin-right: 2vw;
 }
 .comment-section {
     width: 100%;
@@ -182,12 +226,6 @@ a {
     padding: 0;
     margin: 0;
 }
-.user-comment.user-container {
-    align-items: center;
-}
-.user-comment.user-container p {
-    margin-right: 1vw;
-}
 .comment-input-group {
     margin-top: auto;
     align-self: flex-end;
@@ -199,7 +237,6 @@ a {
     font-weight: var(--font-weight);
     text-align: left;
 }
-
 .comment-input {
     width: 100%;
     display: flex;
@@ -218,8 +255,15 @@ p + p,
     margin-left: 2vw;
 }
 
-.sub-AppHeader {
+.sub-header {
     font-size: 2em;
     margin: 1vh 0;
+}
+
+.image-button {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
 }
 </style>

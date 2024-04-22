@@ -102,7 +102,7 @@ nav,
   width: 100%;
 }
 nav {
-  height: 20vh;
+  height: 150px;
   background-image: linear-gradient(to right, #f59f61, #e43f6c, #4b057a);
   padding: 0 7vw;
 }
