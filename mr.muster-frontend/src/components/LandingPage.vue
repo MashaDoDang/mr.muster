@@ -1,11 +1,6 @@
 <template>
   <div>
-    <Header>
-      <div class="buttons-container">
-        <button class="btn log-button">Log in</button>
-        <button class="btn sign-button">Get started</button>
-      </div>
-    </Header>
+    <AppHeader/>
     <div class="container">
       <div class="text-container">
         <h1>Create your own grid</h1>
@@ -23,7 +18,7 @@
           <img src="../assets/mock-img2.jpg" class="img" />
         </div>
         <div class="col">
-          <img src="../assets/mock-img3.jpg" class="img" />
+          <img src="../assets/mock-img3.jpg" class="img" @click="navigateToPost()" />
           <img src="../assets/mock-img4.png" class="img" />
         </div>
         <div class="col">
@@ -36,14 +31,26 @@
 </template>
 
 <script>
-import Header from "./Header.vue";
+import { useRouter } from 'vue-router';
+import AppHeader from './AppHeader.vue';
+
 export default {
   name: "landing-page",
   components: {
-    Header,
+    AppHeader,
   },
+  setup() {
+    const router = useRouter();
+
+    function navigateToPost() {
+      router.push('/view-post');
+    }
+
+    return { navigateToPost };
+  }
 };
 </script>
+
 
 <style scoped>
 * {
@@ -119,5 +126,9 @@ export default {
   width: 100%;
   box-shadow: 1px 1px 1px rgba(0, 0, 0, 0.1);
   border-radius: 10px;
+}
+
+.img:hover {
+  cursor: pointer;
 }
 </style>
