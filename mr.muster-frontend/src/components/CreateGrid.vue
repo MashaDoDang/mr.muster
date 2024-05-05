@@ -1,7 +1,8 @@
 <template>
   <div style="display: flex; align-items: center; justify-content: center; flex-direction: column;"
     @dragover.prevent="dragOver" @drop.prevent="dropFile" @dragleave.prevent="dragLeave">
-    <div class="create-container" :class="{ 'dragging': isDragging }">
+    <div class="create-container" :class="{ 'dragging': isDragging }" style="padding: 20px;">
+      <MusterOverlay :isProcessing="isProcessing" :processingLabel="processingLabel" />
       <input type="file" ref="fileInput" class="d-none" @change="previewImage" accept="image/*">
       <div v-if="!file" class="uploading">
         <button class="btn log-button" :class="{ 'dragging': isDragging }" @click="triggerFileInput">
@@ -18,16 +19,17 @@
           <button class="btn icon-button change-button" @click="triggerFileInput" title="Change Image">
             <i class="fas fa-sync-alt"></i>
           </button>
+          <ColorCarousel v-if="file && usedColors.length && newGridCreated" :colors="usedColors" />
         </div>
       </div>
-      <div class="details">
+      <div class="details" style="min-width: 550px;">
         <p style="font-family: Lexend, sans-serif; padding-left: 10px;">Specify details</p>
-        <input min="1" step="1" type="number" class="form-control" placeholder="No. colors" v-model="noColors"
+        <input type="text" class="form-control" placeholder="No. colors" v-model="noColors"
           @input="validateInputPositiveInteger">
         <div class="input-group">
-          <input min="1" step="1" type="number" class="form-control" :placeholder="isHorizontal ? 'Width' : 'Height'"
+          <input type="text" class="form-control" :placeholder="isHorizontal ? 'Blocks in width' : 'Blocks in height'"
             v-model="noBlocks" @input="validateInputPositiveInteger">
-          <div class="input-group-append">
+          <div class="input-group-append" style="margin-left: 50px;">
             <v-btn-toggle v-model="isHorizontal" color="deep-purple-accent-3" rounded="0" group mandatory
               style="width: 280px;">
               <v-btn :value='true' style="width: 50%;">Horizontal</v-btn>
@@ -35,8 +37,13 @@
             </v-btn-toggle>
           </div>
         </div>
+        <input type="text" class="form-control" placeholder="Scale factor" v-model="scaleFactor"
+          @input="validateInputPositiveNumber">
         <div style="display: flex; align-items: center; width: 100%; justify-content: space-between">
-          <span>Generate with grid</span>
+          <input v-if="isGrid" type="text" class="form-control" placeholder="Thick line frequency"
+            v-model="thickLineFrequency" @input="validateInputPositiveInteger"
+            style="margin-bottom: 0px; width: 220px; padding: 6px 12px;">
+          <span v-else style="margin-left: 12px">Generate with grid</span>
           <v-btn-toggle v-model="isGrid" color="deep-purple-accent-3" rounded="0" group mandatory style="width: 280px;">
             <v-btn :value='true' style="width: 50%;">Yes</v-btn>
             <v-btn :value='false' style="width: 50%;">No</v-btn>
@@ -45,15 +52,29 @@
       </div>
     </div>
     <div class="button-container">
-      <button class="btn upload-button cancel" @click="navigateToHome">Cancel</button>
-      <button class="btn upload-button">Generate</button>
+      <!-- If newGridCreated is false, display the Cancel and Generate buttons -->
+      <template v-if="!newGridCreated">
+        <button class="btn upload-button cancel" @click="navigateToHome">Cancel</button>
+        <button class="btn upload-button" @click="sendImageToServer">Generate</button>
+      </template>
+
+      <!-- If newGridCreated is true, display the Discard, Save, and Publish buttons -->
+      <template v-else>
+        <button class="btn upload-button cancel" @click="removeImage">Discard</button>
+        <button class="btn upload-button" @click="sendImageToServer">Generate again</button>
+        <button class="btn upload-button" >Save</button>
+        <button class="btn upload-button" >Publish</button>
+      </template>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
+import axios from 'axios';
+import MusterOverlay from './MusterOverlay.vue';
+import ColorCarousel from './ColorCarousel.vue';
 
 const router = useRouter();
 const file = ref(null);
@@ -61,10 +82,31 @@ const imageUrl = ref('');
 let fileInput = ref(null);
 const isDragging = ref(false); // State to manage drag status
 let dragTimeout = null;  // To store the timeout reference
-const isGrid = ref(true);
+const isGrid = ref(false);
 const isHorizontal = ref(true);
 const noColors = ref();
 const noBlocks = ref();
+const scaleFactor = ref();
+const thickLineFrequency = ref();
+const newGridCreated = ref(false);
+
+let isProcessing = ref(false);
+let processingLabels = ref(['Hang tight, creating your masterpiece!', 'Almost there, adding the final touches!', 'Just a bit more, framing your art!', 'Hold on, polishing the pixels!']);
+let currentLabelIndex = ref(0);
+let processingLabel = ref(processingLabels.value[currentLabelIndex.value]);
+
+let intervalId = null;
+let usedColors = ref([]);
+
+watch(isGrid, (newValue) => {
+  if (newValue) {
+    thickLineFrequency.value = '';
+  }
+});
+
+watch(file, () => {
+  newGridCreated.value = false;
+});
 
 function triggerFileInput() {
   if (fileInput.value) {
@@ -121,16 +163,113 @@ function navigateToHome() {
   router.push('/');
 }
 
-function validateInputPositiveInteger() {
-  // Regular expression to allow only digits
-  noColors.value = parseInt(noColors.value.toString().replace(/[^0-9]+/g, ''));
+const validateInputPositiveInteger = (event) => {
+  let value = event.target.value;
+  // Check if the input is a valid number format
+  if (!/^\d{1,4}$/.test(value)) {
+    event.target.value = event.target.value.slice(0, -1);
+    return;
+  }
+  value = parseFloat(value);
+  if (isNaN(value) || value < 0) {
+    event.target.value = event.target.value.slice(0, -1);
+  }
+};
+
+
+const validateInputPositiveNumber = (event) => {
+  let value = event.target.value;
+  // Check if the input is a valid number format
+  if (!/^\d*([.,])?\d*$/.test(value)) {
+    event.target.value = event.target.value.slice(0, -1);
+    return;
+  }
+  value = parseFloat(value);
+  if (isNaN(value) || value < 0) {
+    event.target.value = event.target.value.slice(0, -1);
+  }
+};
+
+function validateInputs() {
+  if (!file.value) {
+    alert('Please provide a file.');
+    return false;
+  }
+
+  if (!noColors.value || noColors.value <= 0) {
+    alert('Please provide a number of colors. It must be greater than 0');
+    return false;
+  }
+
+  if (!noBlocks.value || noBlocks.value <= 0) {
+    alert('Please provide a number of blocks. It must be greater than 0');
+    return false;
+  }
+
+  if (!scaleFactor.value || scaleFactor.value <= 0) {
+    alert('Please provide a scale factor. It cannot be 0');
+    return false;
+  }
+
+  scaleFactor.value = scaleFactor.value.replace(',', '.');
+
+  if ((!thickLineFrequency.value || thickLineFrequency.value < 0) && isGrid.value) {
+    alert('Please provide a thick line frequency. It must be greater than 0');
+    return false;
+  }
+
+  return true;
+}
+
+async function sendImageToServer() {
+  if (!validateInputs()) {
+    return;
+  }
+  isProcessing.value = true;
+  currentLabelIndex.value = 0;
+  processingLabel.value = processingLabels.value[currentLabelIndex.value];
+  intervalId = setInterval(() => {
+    currentLabelIndex.value = (currentLabelIndex.value + 1) % processingLabels.value.length;
+    processingLabel.value = processingLabels.value[currentLabelIndex.value];
+  }, 6000);
+  const formData = new FormData();
+  formData.append('image', file.value); // Append file from ref
+  formData.append('is_height', isHorizontal.value);
+  formData.append('block_num', noBlocks.value);
+  formData.append('max_colors', noColors.value);
+  formData.append('thick_line_freq', isGrid.value ? thickLineFrequency.value : 5);
+  formData.append('scale_factor', scaleFactor.value); // Use ref value
+  formData.append('generate_grid', isGrid.value);
+  try {
+    const response = await axios.post('http://localhost:5000/pixelate_image', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    // Now response.data.image should be a base64 string
+    imageUrl.value = 'data:image/png;base64,' + response.data.image;
+
+    // response.data.colors should be an array of colors
+    usedColors.value = response.data.colors;
+
+    isProcessing.value = false;
+    clearInterval(intervalId);
+    processingLabel.value = 'Processing...';
+    newGridCreated.value = true;
+
+  } catch (error) {
+    console.error('Error uploading image:', error);
+    isProcessing.value = false;
+    clearInterval(intervalId);
+    processingLabel.value = 'Processing...';
+    newGridCreated.value = false;
+  }
 }
 </script>
 
 <style scoped>
 .create-container {
-  --padding: 55px;
-  width: 75%;
+  width: 86%;
   display: flex;
   gap: 20px;
   align-items: center;
@@ -200,13 +339,12 @@ input:focus {
 
 .details {
   display: grid;
-  justify-items: start;
 }
 
 .button-container {
   display: flex;
   justify-content: flex-end;
-  width: 75%;
+  width: 86%;
   padding: 20px 0px;
   gap: 20px;
 }
@@ -297,5 +435,47 @@ input:focus {
 .btn.dragging {
   background-color: #ffa500;
   color: white;
+}
+
+.vue-loading-text {
+  visibility: visible;
+  /* Make sure it's not hidden */
+  color: black;
+  /* Ensure the text is a visible color */
+  font-size: 16px;
+  /* Ensure the text has a reasonable size */
+}
+
+.vue-loading-text {
+  z-index: 100;
+  /* Make it higher than the overlay's z-index if needed */
+}
+
+.container {
+  display: flex;
+  /* Enables flexbox */
+  justify-content: space-between;
+  /* Spaces out the child divs */
+  padding: 20px;
+  /* Adds padding around the contents */
+}
+
+
+.left-panel {
+  display: flex;
+  align-items: center;
+  /* Vertically center the content */
+  justify-content: center;
+  /* Horizontally center the content */
+  height: 100px;
+  /* Set a fixed height for demonstration */
+}
+
+.right-panel {
+  display: flex;
+  align-items: baseline;
+  /* Aligns items to their baseline */
+  height: 100px;
+  /* Set a fixed height for demonstration */
 }
 </style>
