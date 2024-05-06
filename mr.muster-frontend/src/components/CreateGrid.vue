@@ -3,6 +3,7 @@
     @dragover.prevent="dragOver" @drop.prevent="dropFile" @dragleave.prevent="dragLeave">
     <div class="create-container" :class="{ 'dragging': isDragging }" style="padding: 20px;">
       <MusterOverlay :isProcessing="isProcessing" :processingLabel="processingLabel" />
+      <MusterOverlay :isProcessing="isUploading" :processingLabel="actionLabel" />
       <input type="file" ref="fileInput" class="d-none" @change="previewImage" accept="image/*">
       <div v-if="!file" class="uploading">
         <button class="btn log-button" :class="{ 'dragging': isDragging }" @click="triggerFileInput">
@@ -24,6 +25,7 @@
       </div>
       <div class="details" style="min-width: 550px;">
         <p style="font-family: Lexend, sans-serif; padding-left: 10px;">Specify details</p>
+        <input type="text" class="form-control" placeholder="Name" v-model="gridName">
         <input type="text" class="form-control" placeholder="No. colors" v-model="noColors"
           @input="validateInputPositiveInteger">
         <div class="input-group">
@@ -62,19 +64,42 @@
       <template v-else>
         <button class="btn upload-button cancel" @click="removeImage">Discard</button>
         <button class="btn upload-button" @click="sendImageToServer">Generate again</button>
-        <button class="btn upload-button" >Save</button>
-        <button class="btn upload-button" >Publish</button>
+        <button class="btn upload-button" @click="showModal('save')" :disabled="!isLoggedIn">Save</button>
+        <button class="btn upload-button" @click="showModal('publish')" :disabled="!isLoggedIn">Publish</button>
       </template>
+    </div>
+    <ConfirmationModal v-if="showConfirmationModal" :modalType="modalType" @close="showConfirmationModal = false"
+      @save="handleSave" @publish="handlePublish" />
+    <div v-if="showSuccessModal" class="login-overlay">
+      <div class="login-modal">
+        <h2 class="modal-header">Success!</h2>
+        <p>The operation resulted in a success. What would you like to do next?</p>
+        <div style="display: flex; justify-content: space-evenly; gap: 5px; margin-top: 50px;">
+          <button @click="showSuccessModal = false" class="btn btn-primary mb-3 btn-yellow" type="button"
+            style="flex: 1; border-radius: 40px">
+            Continue Generating
+          </button>
+          <button @click="viewPost" class="btn btn-primary mb-3 btn-orange" type="button" style="flex: 1; border-radius: 40px">
+            View Post
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 import MusterOverlay from './MusterOverlay.vue';
 import ColorCarousel from './ColorCarousel.vue';
+import ConfirmationModal from './ConfirmationModal.vue';
+import { storage, db, auth } from '../firebase';
+import { ref as firebaseRef, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { collection, addDoc, updateDoc, arrayUnion, doc } from "firebase/firestore";
+import { onAuthStateChanged } from 'firebase/auth';
+
 
 const router = useRouter();
 const file = ref(null);
@@ -89,14 +114,33 @@ const noBlocks = ref();
 const scaleFactor = ref();
 const thickLineFrequency = ref();
 const newGridCreated = ref(false);
+const gridName = ref('');
+
+const showConfirmationModal = ref(false);
+const modalType = ref('');
 
 let isProcessing = ref(false);
 let processingLabels = ref(['Hang tight, creating your masterpiece!', 'Almost there, adding the final touches!', 'Just a bit more, framing your art!', 'Hold on, polishing the pixels!']);
 let currentLabelIndex = ref(0);
 let processingLabel = ref(processingLabels.value[currentLabelIndex.value]);
 
+const isUploading = ref(false);
+const actionLabel = ref('');
+
 let intervalId = null;
 let usedColors = ref([]);
+
+const isLoggedIn = ref(false);
+const showSuccessModal = ref(false);
+
+onAuthStateChanged(auth, user => {
+  isLoggedIn.value = !!user;
+});
+
+onBeforeUnmount(() => {
+  clearTimeout(dragTimeout);
+  clearInterval(intervalId);
+});
 
 watch(isGrid, (newValue) => {
   if (newValue) {
@@ -107,6 +151,85 @@ watch(isGrid, (newValue) => {
 watch(file, () => {
   newGridCreated.value = false;
 });
+
+function showModal(type) {
+  modalType.value = type;
+  showConfirmationModal.value = true;
+}
+
+async function addToStorageAndSaveAsGrid(isPrivate) {
+  isUploading.value = true;
+  // Convert the base64 string in imageUrl to a Blob object
+  const response = await fetch(imageUrl.value);
+  const blob = await response.blob();
+
+  // Create a storage reference from our storage service
+  const storageRef = firebaseRef(storage, 'generated/' + gridName.value + new Date().getTime() + '.png');
+
+  // Start the upload
+  const uploadTask = uploadBytesResumable(storageRef, blob);
+
+  // Listen for state changes, errors, and completion of the upload.
+  uploadTask.on('state_changed',
+    (snapshot) => {
+      // Get task progress, including the number of bytes uploaded and the total number of bytes to be uploaded
+      var progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+      console.log('Upload is ' + progress + '% done');
+    },
+    (error) => {
+      // Handle unsuccessful uploads
+      console.error('Upload failed:', error);
+      isUploading.value = false;
+    },
+    async () => {
+      // Handle successful uploads on complete
+      const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+      console.log('File available at', downloadURL);
+
+      // Get the current user's UID
+      const uid = auth.currentUser ? auth.currentUser.uid : null;
+
+      // Add a new document to the grids collection
+      const docRef = await addDoc(collection(db, "Grids"), {
+        Author: "/Users/" + uid,
+        Comments: [],
+        Content: downloadURL,
+        IsPrivate: isPrivate,
+        Likes: [],
+        PostedDate: new Date(),
+        Title: gridName.value,
+        isReported: false
+      });
+
+      console.log("Document written with ID: ", docRef.id);
+
+      // Get a reference to the user document
+      const userDocRef = doc(db, "Users", uid);
+
+      // Add the reference to the new grid document to the OwnedGrids array of the user document
+      await updateDoc(userDocRef, {
+        OwnedGrids: arrayUnion(docRef)
+      });
+
+      isUploading.value = false;
+      showSuccessModal.value = true;
+    }
+  );
+}
+
+function handleSave() {
+  actionLabel.value = 'Saving...';
+  addToStorageAndSaveAsGrid(true);
+}
+
+function handlePublish() {
+  actionLabel.value = 'Publishing...';
+  addToStorageAndSaveAsGrid(false);
+}
+
+function viewPost() {
+  router.push('/view-post');
+}
 
 function triggerFileInput() {
   if (fileInput.value) {
@@ -196,6 +319,11 @@ function validateInputs() {
     return false;
   }
 
+  if (!gridName.value) {
+    alert('Please provide a name for the grid. It does not have to be unique');
+    return false;
+  }
+
   if (!noColors.value || noColors.value <= 0) {
     alert('Please provide a number of colors. It must be greater than 0');
     return false;
@@ -254,14 +382,12 @@ async function sendImageToServer() {
 
     isProcessing.value = false;
     clearInterval(intervalId);
-    processingLabel.value = 'Processing...';
     newGridCreated.value = true;
 
   } catch (error) {
     console.error('Error uploading image:', error);
     isProcessing.value = false;
     clearInterval(intervalId);
-    processingLabel.value = 'Processing...';
     newGridCreated.value = false;
   }
 }
@@ -477,5 +603,44 @@ input:focus {
   /* Aligns items to their baseline */
   height: 100px;
   /* Set a fixed height for demonstration */
+}
+
+.login-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.login-modal {
+    background-color: rgb(255, 255, 255);
+    padding: 40px 30px;
+    border-radius: 30px;
+    width: 400px;
+}
+
+.modal-header {
+    margin-bottom: 40px;
+    font-size: 32px;
+    font-weight: 500;
+    justify-content: center;
+    align-items: center;
+}
+
+.btn-orange {
+    background-color: #d95b00;
+    border-color: #d95b00;
+    color: white;
+}
+
+.btn-yellow {
+    border-color: #fbc46a;
+    color: #fbc46a;
+    background-color: rgb(248, 248, 248);
 }
 </style>
