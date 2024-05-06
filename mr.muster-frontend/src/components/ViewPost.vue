@@ -29,15 +29,18 @@
                 </div>
             </div>
 
+            <div class="comment-input-group" style="margin: 30px 0px;">
+                <input type="text" class="comment-input" placeholder="Add comment" v-model="newComment">
+                <button class="material-symbols-outlined send-icon" @click="addComment">send</button>
+            </div>
             <div class="comment-box">
                 <p v-if="!renderComments().length" style="margin-top: 40px;">Be the first to leave a comment!</p>
-                <Comment v-for="item in renderComments()" :key="item.comment.id" :comment="item.comment"
-                    :user="item.user" :userID="item.username" :userIcon="item.userIcon" />
+                <Comment v-for="item in renderComments()" :key="item.comment.id" :comment="item.comment" :user="item"
+                    :userID="item.username" :userIcon="item.userIcon" :commentRef="item.commentRef"
+                    @commentDeleted="handleCommentDeleted" @removeCommentFromState="removeCommentFromState"
+                    @commentUpdated="handleCommentUpdated" />
             </div>
-            <div class="comment-input-group">
-                <input type="text" class="comment-input" placeholder="Add comment">
-                <button class="material-symbols-outlined send-icon">send</button>
-            </div>
+
         </div>
     </div>
 </template>
@@ -45,7 +48,9 @@
 <script>
 import Comment from "./Comment.vue";
 import { db } from "../firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, addDoc, collection, arrayUnion, updateDoc } from "firebase/firestore";
+import { getAuth } from "firebase/auth";
+
 export default {
     name: "view-post",
     components: {
@@ -59,6 +64,7 @@ export default {
             gridAuthor: "",
             authorIcon: "",
             content: "",
+            newComment: '',
             commentsIDs: [],
             allComments: {},
             commentUsersIDs: {},
@@ -94,13 +100,12 @@ export default {
                 await this.fetchUsers(Object.values(this.commentUsersIDs));
             }
         },
-        async fetchComments(commentsIDs) {
-            if (commentsIDs) {
-                for (const commentID_path of commentsIDs) {
-                    const commentID = commentID_path.path.split('/')[1];
-                    const commentRef = doc(db, "Comments", commentID);
+        async fetchComments(commentsRefs) {
+            if (commentsRefs) {
+                for (const commentRef of commentsRefs) {
                     const commentSnap = await getDoc(commentRef);
                     const commentData = commentSnap.data();
+                    const commentID = commentSnap.id;
                     this.allComments[commentID] = commentData;
                     const userID = commentData.Author.path.split('/')[1];
                     const userRef = doc(db, "Users", userID);
@@ -133,7 +138,8 @@ export default {
                 }
                 const [userID, username, userIcon] = this.commentUsersIDs[commentID];
                 const user = this.allUsers[userID];
-                return { comment, user, userID, username, userIcon };
+                const commentRef = doc(db, 'Comments', commentID);
+                return { comment, user, userID, username, userIcon, commentRef };
             }).filter(comment => comment !== null, userIcon => userIcon !== "");
         },
         renderUsers() {
@@ -143,7 +149,51 @@ export default {
             return Object.keys(this.allUsers).map(commentID => {
                 return this.allUsers[this.commentUsersIDs[commentID][0]];
             });
-        }
+        },
+        async addComment() {
+            if (this.newComment.trim() === '') {
+                alert('Comment cannot be empty');
+                return;
+            }
+            const gridID = this.$route.params.id;
+            const gridRef = doc(db, "Grids", gridID);
+            const auth = getAuth();
+            const currentUserID = auth.currentUser.uid; // get the ID of the currently authenticated user
+            const authorRef = doc(db, "Users", currentUserID);
+
+            const comment = {
+                Author: authorRef,
+                Content: this.newComment,
+                Date: new Date(),
+                Grid: gridRef,
+                isReported: false
+            };
+
+            const commentRef = await addDoc(collection(db, "Comments"), comment);
+
+            // Add the reference of the new comment to the current grid
+            await updateDoc(gridRef, {
+                Comments: arrayUnion(commentRef)
+            });
+            this.newComment = '';
+            this.getGridInfo(); // refresh the comments
+        },
+        handleCommentDeleted(commentRef) {
+            const index = this.commentsIDs.findIndex(ref => ref.id === commentRef.id);
+            if (index !== -1) {
+                this.commentsIDs.splice(index, 1);
+            }
+        },
+        removeCommentFromState(commentID) {
+            delete this.allComments[commentID];
+            delete this.commentUsersIDs[commentID];
+        },
+        async handleCommentUpdated(commentRef) {
+            const commentSnap = await getDoc(commentRef);
+            const commentData = commentSnap.data();
+            const commentID = commentSnap.id;
+            this.allComments[commentID] = commentData;
+        },
     },
 };
 </script>
