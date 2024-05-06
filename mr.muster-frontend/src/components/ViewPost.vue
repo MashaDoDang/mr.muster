@@ -1,6 +1,8 @@
 <template>
+
     <head>
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,200,0,0" />
+        <link rel="stylesheet"
+            href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,200,0,0" />
     </head>
     <div class="post-container container">
         <div class="pic-arrow">
@@ -14,24 +16,25 @@
                     <div class="name-bot-com-section">
                         <p>{{ commentsAmount }} comments</p>
                         <p> {{ likes }}</p>
-                        <a href="#" class="material-symbols-outlined like-icon">favorite</a>
+                        <button class="material-symbols-outlined like-icon">favorite</button>
                     </div>
                 </div>
                 <div class="user-comment user-container">
                     <p>@{{ gridAuthor }}</p>
                     <button @click="handleButtonClick" class="button-image">
-                        <img :src="authorIcon" class="image-button"> 
+                        <img :src="authorIcon" class="image-button">
                     </button>
                 </div>
             </div>
-            
+
             <div class="comment-box">
                 <p v-if="!renderComments().length">Be the first to leave the comment!</p>
-                <Comment v-for="item in renderComments()" :key="item.comment.id" :comment="item.comment" :user="item.user" :userID="item.userID"/>
+                <Comment v-for="item in renderComments()" :key="item.comment.id" :comment="item.comment"
+                    :user="item.user" :userID="item.username" :userIcon="item.userIcon" />
             </div>
             <div class="comment-input-group">
                 <input type="text" class="comment-input" placeholder="Add comment">
-                <a href="#" class="material-symbols-outlined like-icon">favorite</a>
+                <button class="material-symbols-outlined send-icon">send</button>
             </div>
         </div>
     </div>
@@ -39,125 +42,106 @@
 
 <script>
 import Comment from "./Comment.vue";
-import { mockFirestore } from "../database/mockFirebaseFunctions";
-//import { all } from "core-js/fn/promise";
+import { db } from "../firebase";
+import { doc, getDoc } from "firebase/firestore";
 export default {
-  name: "view-post",
-  components: {
-    Comment,
-  },
-  data() {
-    return {
-        title: null,
-        likes: null,
-        commentsAmount: null,
-        gridAuthor: null,
-        authorIcon: null,
-        content: "",
-        commentsIDs: [],
-        allComments: {},
-        commentUsersIDs: {},
-        allUsers: {},
-    };
-  },
-  created() {
-    this.fetchGridData("gridID1");
-  },
-  watch: {
-        allComments: {
-            handler(newVal) {
-            if (Object.keys(newVal).length) {
-                this.renderComments();
-            }
-            },
-            deep: true
-        },
-        allUsers: {
-            handler(newVal) {
-                if (Object.keys(newVal).length) {
-                    this.renderUsers();
+    name: "view-post",
+    components: {
+        Comment,
+    },
+    data() {
+        return {
+            title: "",
+            likes: 0,
+            commentsAmount: 0,
+            gridAuthor: "",
+            authorIcon: "",
+            content: "",
+            commentsIDs: [],
+            allComments: {},
+            commentUsersIDs: {},
+            allUsers: {},
+        };
+    },
+    created() {
+        this.getGridInfo("kTze50ggmENEcKIbwzfG");
+    },
+    methods: {
+        async getGridInfo(gridID) {
+            const gridRef = doc(db, "Grids", gridID);
+            const gridSnap = await getDoc(gridRef);
+            const gridData = gridSnap.data();
+            if (gridData) {
+                this.likes = gridData.Likes ? gridData.Likes.length : 0;
+                this.commentsAmount = gridData.Comments ? gridData.Comments.length : 0;
+                this.title = gridData.Title;
+                this.content = gridData.Content;
+
+                const authorID = gridData.Author;
+                if (authorID) {
+                    const authorRef = doc(db, "Users", authorID.path.split('/')[1]);
+                    const authorSnap = await getDoc(authorRef);
+                    if (authorSnap.exists()) {
+                        this.gridAuthor = authorSnap.data().Username;
+                        this.authorIcon = authorSnap.data().Icon;
+                    }
                 }
-            },
-            deep: true
+                this.commentsIDs = gridData.Comments || [];
+                await this.fetchComments(this.commentsIDs);
+                await this.fetchUsers(Object.values(this.commentUsersIDs));
+            }
         },
-        commentUsersIDs: {
-            handler(newVal) {
-                if (Object.keys(newVal).length) {
-                    this.renderUsers();
+        async fetchComments(commentsIDs) {
+            if (commentsIDs) {
+                for (const commentID_path of commentsIDs) {
+                    const commentID = commentID_path.path.split('/')[1];
+                    const commentRef = doc(db, "Comments", commentID);
+                    const commentSnap = await getDoc(commentRef);
+                    const commentData = commentSnap.data();
+                    this.allComments[commentID] = commentData;
+                    const userID = commentData.Author.path.split('/')[1];
+                    const userRef = doc(db, "Users", userID);
+                    const userSnap = await getDoc(userRef);
+                    this.commentUsersIDs[commentID] = [userID, userSnap.data().Username, userSnap.data().Icon];
                 }
-            },
-            deep: true
+            } else {
+                this.allComments = {};
+            }
         },
-    },
-  methods: {
-    async fetchGridData(gridId) {
-        const docSnapshot = await mockFirestore.collection("grids").doc(gridId).get();
-        const gridData = docSnapshot.data();
-        this.likes = gridData ? gridData.likes.length : null;
-        this.commentsAmount = gridData ? gridData.comments.length : null;
-        this.title = gridData ? gridData.title : null;
-        this.gridAuthor = gridData ? gridData.author : null;
-        if (gridData && gridData.content) {
-            import(`../assets/${gridData.content}`).then((image) => {
-                this.content = image.default;
-        });
-        } else {
-            this.content = null;
-        }
-        this.commentsIDs = gridData ? gridData.comments : [];
-        await this.fetchComments(this.commentsIDs);
-        await this.fetchUsers(Object.values(this.commentUsersIDs));
-        await this.fetchAuthorIcon();
-    },
-    
-    async fetchComments(commentsIDs) {
-        if (commentsIDs) {
-            for (const commentID of commentsIDs) {
-                const commentSnapshot = await mockFirestore.collection("comments").doc(commentID).get();
-                const commentData = commentSnapshot.data();
-                this.allComments[commentID] = commentData;
-                this.commentUsersIDs[commentID] = commentData.author;
+        async fetchUsers(usersIDs) {
+            if (usersIDs) {
+                for (const [userID, username] of usersIDs) {
+                    const userRef = doc(db, "Users", userID);
+                    const userSnap = await getDoc(userRef);
+                    this.allUsers[username] = userSnap.data();
+                }
+            } else {
+                this.allUsers = {};
             }
-        } else {
-            this.allComments = {};
-        }
-    },
-    async fetchUsers(usersIDs) {
-        if (usersIDs) {
-            for (const userID of usersIDs) {
-                const userSnapshot = await mockFirestore.collection("users").doc(userID).get();
-                const userData = userSnapshot.data();
-                this.allUsers[userID] = userData;
+        },
+        renderComments() {
+            if (!this.allComments) {
+                return [];
             }
-        } else {
-            this.allUsers = {};
-        }
-    },
-    async fetchAuthorIcon() {
-        const docSnapshot = await mockFirestore.collection("users").doc(this.gridAuthor).get();
-        const authorData = docSnapshot.data();
-        if (authorData && authorData.userIcon) {
-            import(`../assets/${authorData.userIcon}`).then((image) => {
-                this.authorIcon = image.default;
+            return Object.keys(this.allComments).map(commentID => {
+                const comment = this.allComments[commentID];
+                if (!this.commentUsersIDs[commentID]) {
+                    return null;
+                }
+                const [userID, username, userIcon] = this.commentUsersIDs[commentID];
+                const user = this.allUsers[userID];
+                return { comment, user, userID, username, userIcon };
+            }).filter(comment => comment !== null, userIcon => userIcon !== "");
+        },
+        renderUsers() {
+            if (!this.allUsers) {
+                return [];
+            }
+            return Object.keys(this.allUsers).map(commentID => {
+                return this.allUsers[this.commentUsersIDs[commentID][0]];
             });
-        } else {
-            this.authorIcon = null;
         }
     },
-    renderComments() {
-        return Object.keys(this.allComments).map(commentID => {
-            const comment = this.allComments[commentID];
-            const userID = this.commentUsersIDs[commentID];
-            const user = this.allUsers[userID];
-            return {comment, user, userID};
-        });
-    },
-    renderUsers() {
-        return Object.keys(this.allUsers).map(commentID => {
-            return this.allUsers[this.commentUsersIDs[commentID]];
-        });
-    }
-  },
 };
 </script>
 
@@ -198,24 +182,29 @@ a {
     width: 100%;
     height: auto;
     display: flex;
+    justify-content: center;
 }
+
 .pic-arrow {
     width: max-content;
     display: flex;
     justify-content: space-evenly;
     align-items: flex-start;
 }
+
 .pic-arrow img {
     width: 30vw;
     height: auto;
     object-fit: cover;
     margin-right: 2vw;
 }
+
 .comment-section {
     width: 100%;
     display: flex;
-    flex-direction: column; 
+    flex-direction: column;
 }
+
 .top-comment-section,
 .name-bot-com-section,
 .comment-input-group {
@@ -226,6 +215,7 @@ a {
     padding: 0;
     margin: 0;
 }
+
 .comment-input-group {
     margin-top: auto;
     align-self: flex-end;
@@ -233,10 +223,12 @@ a {
 }
 
 .name-top-com-section p,
-.like-icon {
+.like-icon,
+.send-icon {
     font-weight: var(--font-weight);
     text-align: left;
 }
+
 .comment-input {
     width: 100%;
     display: flex;
@@ -245,13 +237,13 @@ a {
     border-radius: 50em;
 }
 
-.comment-input-group .like-icon {
+.send-icon {
     font-size: 2.5em;
 }
 
-p + p,
-.comment-input + span,
-.arrow + img {
+p+p,
+.comment-input+span,
+.arrow+img {
     margin-left: 2vw;
 }
 
