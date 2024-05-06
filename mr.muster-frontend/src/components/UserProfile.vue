@@ -23,8 +23,8 @@
                 <p>Likes</p>
             </div>
         </div>
-      </div>
-      <div class="profile-grids container p-3 my-3 mt-5">
+    </div>
+    <div class="profile-grids container p-3 my-3 mt-5">
         <div class="user-grids grids-container">
             <p>Patterns created by you</p>
             <div class="pic-grid mt-3">
@@ -44,6 +44,7 @@
                 </div>
             </div>
         </div>
+        <div class="vr"></div>
         <div class="liked-grids grids-container">
             <p>Your Favourites</p>
             <div class="pic-grid mt-3">
@@ -67,108 +68,124 @@
 </template>
 
 <script>
-    import { mockFirestore } from "../database/mockFirebaseFunctions";
-    export default {
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../firebase";
+export default {
     name: "user-profile",
     data() {
         return {
-            followedBy: null,
-            follows: null,
-            likes: null,
-            name: null,
-            userIcon: null,
+            followedBy: 0,
+            follows: 0,
+            likes: 0,
+            name: "",
+            userIcon: "",
         };
     },
     created() {
-        this.fetchFollowerCount("username1");
+        this.getUserInfo("jrnuchB4pHUb30awW6wMinzvKru1");
     },
     methods: {
-        async fetchFollowerCount(userId) {
-            const docSnapshot = await mockFirestore.collection("users").doc(userId).get();
-            const userData = docSnapshot.data();
-            this.followedBy = userData ? userData.followedBy.length : null;
-            this.follows = userData ? userData.follows.length : null;
-            this.likes = userData ? userData.likes : null;
-            this.name = userData ? userData.name : null;
-            if (userData && userData.userIcon) {
-                import(`../assets/${userData.userIcon}`).then((image) => {
-                    this.userIcon = image.default;
-            });
-            } else {
-                this.userIcon = null;
+        async getUserInfo(userId) {
+            const userRef = doc(db, "Users", userId);
+            const userSnap = await getDoc(userRef);
+            const userData = userSnap.data();
+            if (userData) {
+                this.followedBy = userData.FollowedBy.length;
+                this.follows = userData.Follows.length;
+                this.likes = userData.LikedPosts.length;
+                this.name = userData.Username;
+                this.userIcon = userData.Icon;
             }
         },
     },
-    };
+};
 </script>
 
 <style scoped>
-    * {
-        --font-family: 'Lexend', sans-serif;
-        --font-weight: 200;
-        --font-size: 1.1em;
-        --stat-width: 10vw;
-        --grids-container-width: 50%;
-        --user-grids-margin-right: 3vw;
-        --liked-grids-margin-left: 3vw;
-        --row-padding: 1vh 0.5vw;
-        font-family: var(--font-family);
-        font-weight: var(--font-weight);
-        font-size: var(--font-size);
-    }
-    .user-container p {
-        margin-bottom: 1vh;
-    }
-    .button-image {
-        background-color: transparent;
-        border: none;
-        cursor: pointer;
-        padding: 0;
-        display: inline-block;
-    }
-    .image-button {
-        width: 20vh;
-        height: 20vh;
-        border-radius: 50%;
-        object-fit: cover;
-    }
-    .profile-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
-    .stat-container {
-        display: flex;
-        width: var(--grids-container-width);
-        justify-content: space-around;
-        margin-top: 3vh;
-    }
-    .stat {
-        width: var(--stat-width);
-    }
-    .stat p, .stat hr {
-        margin: 0;
-        padding: 0;
-    }
-    .stat hr {
-        width: 100%;
-        margin: 0.5vh 0;
-        border: 1px solid black;
-    }
-    .profile-grids {
-        display: flex;
-        justify-content: space-around;
-    }
-    .grids-container {
-        width: var(--grids-container-width);
-    }
-    .user-grids{
-        margin-right: var(--user-grids-margin-right);
-    }
-    .liked-grids {
-        margin-left: var(--liked-grids-margin-left);
-    }
-    #row>* {
-        padding: var(--row-padding);
-    }
+* {
+    --font-family: 'Lexend', sans-serif;
+    --font-weight: 200;
+    --font-size: 1.1em;
+    --stat-width: 10vw;
+    --grids-container-width: 50%;
+    --user-grids-margin-right: 3vw;
+    --liked-grids-margin-left: 3vw;
+    --row-padding: 1vh 0.5vw;
+    font-family: var(--font-family);
+    font-weight: var(--font-weight);
+    font-size: var(--font-size);
+}
+
+.user-container p {
+    margin-bottom: 1vh;
+}
+
+.button-image {
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    display: inline-block;
+}
+
+.image-button {
+    width: 20vh;
+    height: 20vh;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.profile-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.stat-container {
+    display: flex;
+    width: var(--grids-container-width);
+    justify-content: space-around;
+    margin-top: 3vh;
+}
+
+.stat {
+    width: var(--stat-width);
+}
+
+.stat p,
+.stat hr {
+    margin: 0;
+    padding: 0;
+}
+
+.stat hr {
+    width: 100%;
+    margin: 0.5vh 0;
+    border: 1px solid black;
+}
+
+.profile-grids {
+    display: flex;
+    justify-content: space-around;
+}
+
+.grids-container {
+    width: var(--grids-container-width);
+}
+
+.user-grids {
+    margin-right: var(--user-grids-margin-right);
+}
+
+.liked-grids {
+    margin-left: var(--liked-grids-margin-left);
+}
+
+#row>* {
+    padding: var(--row-padding);
+}
+
+.vr {
+    border: 2px solid;
+}
 </style>
