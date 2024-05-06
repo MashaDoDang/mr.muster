@@ -13,10 +13,12 @@
             <div class="top-comment-section">
                 <div class="name-top-com-section">
                     <p class="sub-header">{{ title }}</p>
-                    <div class="name-bot-com-section">
+                    <div class="name-bot-com-section" style="display: flex; justify-content: flex-start; gap: 30px;">
                         <p>{{ commentsAmount }} comments</p>
-                        <p> {{ likes }}</p>
-                        <button class="material-symbols-outlined like-icon">favorite</button>
+                        <div style="display: flex;">
+                            <p> {{ likes }}</p>
+                            <button class="material-symbols-outlined like-icon">favorite</button>
+                        </div>
                     </div>
                 </div>
                 <div class="user-comment user-container">
@@ -28,7 +30,7 @@
             </div>
 
             <div class="comment-box">
-                <p v-if="!renderComments().length">Be the first to leave the comment!</p>
+                <p v-if="!renderComments().length" style="margin-top: 40px;">Be the first to leave a comment!</p>
                 <Comment v-for="item in renderComments()" :key="item.comment.id" :comment="item.comment"
                     :user="item.user" :userID="item.username" :userIcon="item.userIcon" />
             </div>
@@ -64,10 +66,11 @@ export default {
         };
     },
     created() {
-        this.getGridInfo("kTze50ggmENEcKIbwzfG");
+        this.getGridInfo();
     },
     methods: {
-        async getGridInfo(gridID) {
+        async getGridInfo() {
+            const gridID = this.$route.params.id;
             const gridRef = doc(db, "Grids", gridID);
             const gridSnap = await getDoc(gridRef);
             const gridData = gridSnap.data();
@@ -79,7 +82,7 @@ export default {
 
                 const authorID = gridData.Author;
                 if (authorID) {
-                    const authorRef = doc(db, "Users", authorID.path.split('/')[1]);
+                    const authorRef = doc(db, authorID.path); // Changed this line
                     const authorSnap = await getDoc(authorRef);
                     if (authorSnap.exists()) {
                         this.gridAuthor = authorSnap.data().Username;

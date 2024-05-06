@@ -132,6 +132,7 @@ let usedColors = ref([]);
 
 const isLoggedIn = ref(false);
 const showSuccessModal = ref(false);
+const newlyCreatedGrid = ref(null);
 
 onAuthStateChanged(auth, user => {
   isLoggedIn.value = !!user;
@@ -191,7 +192,7 @@ async function addToStorageAndSaveAsGrid(isPrivate) {
 
       // Add a new document to the grids collection
       const docRef = await addDoc(collection(db, "Grids"), {
-        Author: "/Users/" + uid,
+        Author: doc(db, "Users", uid),        
         Comments: [],
         Content: downloadURL,
         IsPrivate: isPrivate,
@@ -212,6 +213,7 @@ async function addToStorageAndSaveAsGrid(isPrivate) {
       });
 
       isUploading.value = false;
+      newlyCreatedGrid.value = docRef;
       showSuccessModal.value = true;
     }
   );
@@ -228,7 +230,7 @@ function handlePublish() {
 }
 
 function viewPost() {
-  router.push('/view-post');
+  router.push(`/view-post/${newlyCreatedGrid.value.id}`);
 }
 
 function triggerFileInput() {
