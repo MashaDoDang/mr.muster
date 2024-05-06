@@ -17,7 +17,7 @@
           <img src="../assets/mock-img2.jpg" class="img" />
         </div>
         <div class="col">
-          <img src="../assets/mock-img3.jpg" class="img" @click="navigateToPost()" />
+          <img src="../assets/mock-img3.jpg" class="img" />
           <img src="../assets/mock-img4.png" class="img" />
         </div>
         <div class="col">
@@ -37,15 +37,11 @@ export default {
   setup() {
     const router = useRouter();
 
-    function navigateToPost() {
-      router.push('/view-post');
-    }
-
     function navigateToCreate() {
       router.push('/create');
     }
 
-    return { navigateToPost, navigateToCreate };
+    return { navigateToCreate };
   }
 };
 </script>
@@ -104,6 +100,7 @@ export default {
 }
 
 .container {
+  min-width: 86%;
   width: 100vw;
   height: 40vh;
   margin: 10vh 10vw 10vh 7vw;
