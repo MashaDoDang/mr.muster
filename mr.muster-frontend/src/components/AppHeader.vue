@@ -37,8 +37,25 @@
       <slot></slot>
     </div>
     <div class="search-bar" id="search-bar">
-      <span class="material-symbols-outlined">search</span>
-      <input class="search-input" type="search" placeholder="Search type..." />
+      <span v-on:click="saveInput()" class="material-symbols-outlined"
+        >search</span
+      >
+      <input
+        class="search-input"
+        type="search"
+        v-model="searchInput"
+        @keydown.enter="saveInput()"
+        placeholder="Search the grid..."
+      />
+      <select
+        class="form-select"
+        id="select-search"
+        v-model="searchCriteria"
+        @change="saveChoice"
+      >
+        <option value="option-title">by title</option>
+        <option value="option-author">by author</option>
+      </select>
     </div>
   </nav>
   <LoginModal
@@ -51,15 +68,29 @@
 <script setup>
 import { useRouter } from "vue-router";
 import { onAuthStateChanged } from "firebase/auth";
-import { ref } from "vue";
+import { ref, defineProps, defineEmits } from "vue";
 import LoginModal from "./LoginModal.vue";
-import { auth } from "../firebase";
+import { auth, db } from "../firebase";
 import { signOut } from "firebase/auth";
+import { collection, getDocs, getDoc, doc } from "firebase/firestore";
 
 const router = useRouter();
 const userState = ref(false);
 const openLogin = ref(false);
 const registerModeRef = ref(false);
+
+const searchCriteria = ref("option-title");
+const searchInput = ref("");
+const searchResults = ref([]);
+const isSearching = ref(false);
+
+const emit = defineEmits(["reset"]);
+
+const props = defineProps({
+  getResult: {
+    type: Function,
+  },
+});
 
 function openLoginModal() {
   openLogin.value = true;
@@ -90,6 +121,63 @@ function closeModal() {
 const logout = () => {
   return signOut(auth);
 };
+
+function saveChoice() {
+  localStorage.setItem("searchCriteria", searchCriteria.value);
+}
+
+const resetSearch = () => {
+  searchResults.value = [];
+};
+
+async function saveInput() {
+  emit("reset");
+  resetSearch();
+  saveChoice();
+  localStorage.setItem("searchInput", searchInput.value);
+  await handleSearch(searchInput.value, searchCriteria.value);
+  console.log(searchResults.value.length);
+  isSearching.value = true;
+  props.getResult(searchResults.value, isSearching.value, searchInput.value);
+  searchInput.value = "";
+}
+
+async function handleSearch(searchInput, searchCriteria) {
+  const querySnapshot = await getDocs(collection(db, "Grids")); // search | grids | criteria
+  querySnapshot.forEach(async (document) => {
+    const data = document.data();
+    if (searchCriteria === "option-title") {
+      const searchForTitle = data.Title.toLowerCase();
+      if (searchForTitle.includes(searchInput.toLowerCase())) {
+        console.log(
+          searchForTitle,
+          searchInput.toLowerCase(),
+          searchForTitle.includes(searchInput.toLowerCase())
+        ); //debug
+        searchResults.value.push({
+          id: document.id,
+          postUrl: data.Content,
+        });
+      }
+    } else if (searchCriteria === "option-author") {
+      const userRef = doc(db, "Users", data.Author.path.split("/")[1]);
+      const userSnap = await getDoc(userRef);
+      const userData = userSnap.data();
+      const searchForUsername = userData.Username.toLowerCase();
+      if (searchForUsername.includes(searchInput.toLowerCase())) {
+        console.log(
+          searchForUsername,
+          searchInput.toLowerCase(),
+          searchForUsername.includes(searchInput.toLowerCase())
+        ); //debug
+        searchResults.value.push({
+          id: document.id,
+          postUrl: data.Content,
+        });
+      }
+    }
+  });
+}
 </script>
 
 <style scoped>
@@ -217,5 +305,17 @@ button {
 .btn:hover {
   background-color: #f5bc6c;
   border-color: #f5bc6c;
+}
+
+#select-search {
+  font-family: "Lexend", sans-serif;
+  font-size: 16px;
+  height: 100%;
+  margin: 0;
+  width: 20vw;
+}
+#select-search:focus {
+  outline: none;
+  box-shadow: 0 0 0 0.2rem rgba(105, 16, 119, 0.5);
 }
 </style>

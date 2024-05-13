@@ -40,20 +40,6 @@
         created() {
             this.formatDate();
         },
-        // mounted () {
-        //     this.fetchUserIcon(this.user);
-        // },
-        // methods: {
-        //     fetchUserIcon(user) {
-        //         if (user && user.userIcon) {
-        //             import(`../assets/${user.userIcon}`).then((image) => {
-        //                 this.userIcon = image.default;
-        //         });
-        //         } else {
-        //             this.userIcon = null;
-        //         }
-        //     }
-        // }
     };
 </script>
 
