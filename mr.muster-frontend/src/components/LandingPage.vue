@@ -1,55 +1,156 @@
 <template>
+  <AppHeader :getResult="setSearchResults" @reset="resetSearch" />
   <div>
-    <div class="container">
-      <div class="text-container">
-        <h1>Create your own grid</h1>
-        <p>try your custom size and colors</p>
+    <div v-if="!isSearching">
+      <div class="container">
+        <div class="text-container">
+          <h1>Create your own grid</h1>
+          <p>try your custom size and colors</p>
+        </div>
+        <div class="upload-container">
+          <button class="btn upload-button" @click="navigateToCreate()">Upload image</button>
+          <a href="#">or paste URL</a>
+        </div>
       </div>
-      <div class="upload-container">
-        <button class="btn upload-button" @click="navigateToCreate()">Upload image</button>
-        <a href="/create">or paste URL</a>
+      <div class="pic-grid">
+        <div class="row">
+          <div
+            class="col"
+            v-for="(column, columnIndex) in columnsPosts()"
+            :key="columnIndex"
+          >
+            <template v-for="post in column" :key="post.id">
+              <img :src="post.postUrl" class="img" @click="navigateToPost()" />
+              <!-- post.id -->
+            </template>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="pic-grid">
-      <div class="row">
-        <div class="col">
-          <img src="../assets/mock-img1.jpg" class="img" />
-          <img src="../assets/mock-img2.jpg" class="img" />
+
+    <div class="search-result-container" v-else>
+      <div v-if="searchResults.length === 0">
+        <h2>No results found for "{{ searchInput }}"</h2>
+        <button @click="showAllGrids" class="go-back-button">
+          Back to All Grids
+        </button>
+      </div>
+
+      <div class="search-result-container" v-else>
+        <h2>Search Results for "{{ searchInput }}"</h2>
+        <div class="pic-grid">
+          <div class="row">
+            <div
+              class="col"
+              v-for="(column, columnIndex) in columnsResults()"
+              :key="columnIndex"
+            >
+              <template v-for="post in column" :key="post.id">
+                <img
+                  :src="post.postUrl"
+                  class="img"
+                  @click="navigateToPost()"
+                />
+              </template>
+            </div>
+          </div>
         </div>
-        <div class="col">
-          <img src="../assets/mock-img3.jpg" class="img" />
-          <img src="../assets/mock-img4.png" class="img" />
-        </div>
-        <div class="col">
-          <img src="../assets/mock-img5.jpg" class="img" />
-          <img src="../assets/mock-img6.png" class="img" />
-        </div>
+        <button @click="showAllGrids" class="go-back-button">
+          Back to All Grids
+        </button>
       </div>
     </div>
   </div>
 </template>
 
-<script>
-import { useRouter } from 'vue-router';
+<script setup>
+import AppHeader from "./AppHeader.vue";
+import { useRouter } from "vue-router";
+import { db } from "../firebase";
+import { collection, getDocs } from "firebase/firestore";
+import { ref } from "vue";
 
-export default {
-  name: "landing-page",
-  setup() {
-    const router = useRouter();
+const router = useRouter();
+const posts = ref([]);
+const searchResults = ref([]);
+const isSearching = ref(false);
+const searchInput = ref("");
 
-    function navigateToCreate() {
-      router.push('/create');
+async function fetchData() {
+  await getPosts();
+}
+
+async function getPosts() {
+  const querySnapshot = await getDocs(collection(db, "Grids"));
+  querySnapshot.forEach((doc) => {
+    const data = doc.data();
+    if (data.Content && !data.IsPrivate && !data.isReported) {
+      posts.value.push({
+        id: doc.id,
+        postUrl: data.Content,
+      });
     }
+  });
+}
+fetchData();
 
-    return { navigateToCreate };
+const columnsPosts = () => {
+  const columnCount = 3;
+  const result = [];
+  for (let i = 0; i < columnCount; i++) {
+    result.push([]);
   }
+  posts.value.forEach((post, index) => {
+    const columnIndex = index % columnCount;
+    result[columnIndex].push(post);
+  });
+  return result;
 };
-</script>
 
+const columnsResults = () => {
+  const columnCount = 3;
+  const result = [];
+  for (let i = 0; i < columnCount; i++) {
+    result.push([]);
+  }
+  searchResults.value.forEach((post, index) => {
+    const columnIndex = index % columnCount;
+    result[columnIndex].push(post);
+  });
+  return result;
+};
+
+function showAllGrids() {
+  resetIsSearching();
+  resetSearch();
+}
+function resetIsSearching() {
+  isSearching.value = false;
+}
+function resetSearch() {
+  searchResults.value = [];
+}
+
+function setSearchResults(results, searchingStatus, searching) {
+  searchResults.value = results;
+  console.log(searchResults.value.length); //debug
+  isSearching.value = searchingStatus;
+  searchInput.value = searching;
+}
+
+function navigateToPost() {
+  /* postId */
+  router.push("/view-post");
+}
+
+function navigateToCreate() {
+  router.push("/create");
+}
+</script>
 
 <style scoped>
 * {
-  font-family: 'Lexend', sans-serif;
+  font-family: "Lexend", sans-serif;
 }
 .buttons-container {
   width: max-content;
@@ -92,20 +193,23 @@ export default {
   flex-direction: column;
   gap: 10px;
 }
-.upload-container a{
+.upload-container a {
   text-decoration: none;
   color: white;
-  font-family:  'Lexend', sans-serif;
+  font-family: "Lexend", sans-serif;
   font-size: 1.2em;
 }
 
 .container {
-  min-width: 86%;
   width: 100vw;
   height: 40vh;
   margin: 10vh 10vw 10vh 7vw;
   padding: 5vh 5vw;
-  background-image: linear-gradient(to right, rgb(149, 122, 177), rgb(157, 53, 168));
+  background-image: linear-gradient(
+    to right,
+    rgb(149, 122, 177),
+    rgb(157, 53, 168)
+  );
   border-radius: 20px;
   color: white;
   font-weight: 100;
@@ -131,13 +235,33 @@ export default {
   flex-direction: column;
   gap: 10px;
 }
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 20px;
+}
+
 .img {
   width: 100%;
   box-shadow: 1px 1px 1px rgba(0, 0, 0, 0.1);
   border-radius: 10px;
+  margin-bottom: 4vh;
 }
 
 .img:hover {
   cursor: pointer;
+}
+
+.search-container {
+  margin-top: 8vh;
+}
+
+.go-back-button {
+  font-size: 1.3em;
+}
+
+.search-result-container {
+  margin-bottom: 5vh;
 }
 </style>
