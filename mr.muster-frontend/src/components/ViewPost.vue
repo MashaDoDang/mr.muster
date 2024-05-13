@@ -231,8 +231,7 @@ a {
 
 .post-container {
     padding: 0;
-    margin: 7vh 7vw;
-    width: 100%;
+    margin-top: 50px;
     height: auto;
     display: flex;
     justify-content: center;
