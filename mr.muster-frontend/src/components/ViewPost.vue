@@ -5,19 +5,34 @@
             href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,200,0,0" />
     </head>
     <div class="post-container container">
-        <div class="pic-arrow">
+        <div class="pic-arrow" style="margin-right: 20px;">
             <a href="#" class="material-symbols-outlined arrow">arrow_back</a>
-            <img :src="content">
+
         </div>
         <div class="comment-section">
+            <img :src="content" style="height: 60%; max-height: 65vh; object-fit: contain;">
             <div class="top-comment-section">
                 <div class="name-top-com-section">
-                    <p class="sub-header">{{ title }}</p>
+                    <div style="display: flex; gap: 20px">
+                        <p class="sub-header" v-if="!editMode">{{ title }}</p>
+                        <input class="sub-header" v-else v-model="newTitle" @blur="updateTitle"
+                            @keyup.enter="updateTitle" v-focus />
+                        <button @click="toggleEditMode" v-if="!editMode && isAuthor"
+                            class="material-symbols-outlined edit-icon">edit</button>
+                        <button @click="openDeleteModal" v-if="!editMode && isAuthor"
+                            class="material-symbols-outlined trash-icon">delete</button>
+                        <div v-if="!editMode && isAuthor" class="visibility-dropdown">
+                            <select v-model="isPrivate" @change="toggleVisibility">
+                                <option value="false">Public</option>
+                                <option value="true">Private</option>
+                            </select>
+                        </div>
+                    </div>
                     <div class="name-bot-com-section" style="display: flex; justify-content: flex-start; gap: 30px;">
                         <p>{{ commentsAmount }} comments</p>
                         <div style="display: flex;">
                             <p> {{ likes }}</p>
-                            <button class="material-symbols-outlined like-icon">favorite</button>
+                            <button class="material-symbols-outlined like-icon" @click="likeGrid">favorite</button>
                         </div>
                     </div>
                 </div>
@@ -30,7 +45,7 @@
             </div>
 
             <div class="comment-input-group" style="margin: 30px 0px;">
-                <input type="text" class="comment-input" placeholder="Add comment" v-model="newComment">
+                <textarea class="comment-input" placeholder="Add comment" v-model="newComment"></textarea>
                 <button class="material-symbols-outlined send-icon" @click="addComment">send</button>
             </div>
             <div class="comment-box">
@@ -43,18 +58,26 @@
 
         </div>
     </div>
+    <DeleteModal v-if="showDeleteModal" @close="showDeleteModal = false" @delete="deleteGrid"></DeleteModal>
+    <MusterOverlay :isProcessing="isDeleting" :processingLabel="'Deleting...'" />
 </template>
 
 <script>
 import Comment from "./Comment.vue";
 import { db } from "../firebase";
-import { doc, getDoc, addDoc, collection, arrayUnion, updateDoc } from "firebase/firestore";
+import { doc, getDoc, addDoc, collection, arrayUnion, updateDoc, deleteDoc, serverTimestamp, arrayRemove } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
+import { onAuthStateChanged } from "firebase/auth";
+import DeleteModal from "./DeleteModal.vue";
+import router from "@/router";
+import MusterOverlay from './MusterOverlay.vue';
 
 export default {
     name: "view-post",
     components: {
         Comment,
+        DeleteModal,
+        MusterOverlay,
     },
     data() {
         return {
@@ -69,10 +92,27 @@ export default {
             allComments: {},
             commentUsersIDs: {},
             allUsers: {},
+            editMode: false,
+            newTitle: '',
+            isAuthor: false,
+            authorID: null,
+            isPrivate: false,
+            showDeleteModal: false,
+            isDeleting: false,
         };
     },
-    created() {
-        this.getGridInfo();
+    async created() {
+        await this.getGridInfo();
+        const auth = getAuth();
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // User is signed in, check if the user is the author
+                this.isAuthor = user.uid === this.authorID;
+            } else {
+                // User is signed out, set isAuthor to false
+                this.isAuthor = false;
+            }
+        });
     },
     methods: {
         async getGridInfo() {
@@ -81,13 +121,15 @@ export default {
             const gridSnap = await getDoc(gridRef);
             const gridData = gridSnap.data();
             if (gridData) {
+                this.content = gridData.Content;
+                this.title = gridData.Title;
+                this.isPrivate = gridData.IsPrivate;
                 this.likes = gridData.Likes ? gridData.Likes.length : 0;
                 this.commentsAmount = gridData.Comments ? gridData.Comments.length : 0;
-                this.title = gridData.Title;
-                this.content = gridData.Content;
 
                 const authorID = gridData.Author;
                 if (authorID) {
+                    this.authorID = authorID.id; // Store the author's ID
                     const authorRef = doc(db, authorID.path); // Changed this line
                     const authorSnap = await getDoc(authorRef);
                     if (authorSnap.exists()) {
@@ -99,6 +141,13 @@ export default {
                 await this.fetchComments(this.commentsIDs);
                 await this.fetchUsers(Object.values(this.commentUsersIDs));
             }
+        },
+        async toggleVisibility() {
+            const gridID = this.$route.params.id;
+            const gridRef = doc(db, "Grids", gridID);
+            await updateDoc(gridRef, {
+                isPrivate: this.isPrivate === 'true',
+            });
         },
         async fetchComments(commentsRefs) {
             if (commentsRefs) {
@@ -151,7 +200,8 @@ export default {
             });
         },
         async addComment() {
-            if (this.newComment.trim() === '') {
+            this.newComment = this.newComment.trim();
+            if (this.newComment === '') {
                 alert('Comment cannot be empty');
                 return;
             }
@@ -194,6 +244,70 @@ export default {
             const commentID = commentSnap.id;
             this.allComments[commentID] = commentData;
         },
+        toggleEditMode() {
+            this.editMode = !this.editMode;
+            if (this.editMode) {
+                this.newTitle = this.title;
+            }
+        },
+        async updateTitle() {
+            if (this.newTitle.trim() === '') {
+                alert('Title cannot be empty');
+                this.newTitle = this.title;
+                return;
+            }
+            const gridID = this.$route.params.id;
+            const gridRef = doc(db, "Grids", gridID);
+            await updateDoc(gridRef, {
+                Title: this.newTitle
+            });
+            this.title = this.newTitle;
+            this.editMode = false;
+        },
+        async deleteGrid() {
+            this.showDeleteModal = false;
+            this.isDeleting = true;
+            const gridID = this.$route.params.id;
+            const gridRef = doc(db, "Grids", gridID);
+            await deleteDoc(gridRef);
+            // Redirect to another page or show a message
+            this.isDeleting = false;
+            router.push("/");
+        },
+        openDeleteModal() {
+            this.showDeleteModal = true;
+        },
+        async likeGrid() {
+            const auth = getAuth();
+            const currentUserID = auth.currentUser.uid; // get the ID of the currently authenticated user
+            const gridID = this.$route.params.id;
+            const gridRef = doc(db, "Grids", gridID);
+            const gridSnap = await getDoc(gridRef);
+            const gridData = gridSnap.data();
+            const likes = gridData.Likes || [];
+
+            if (likes.includes(currentUserID)) {
+                // User has already liked the post, so remove their like
+                await updateDoc(gridRef, {
+                    Likes: arrayRemove(currentUserID)
+                });
+                this.likes--;
+            } else {
+                // User has not liked the post, so add their like
+                // Create a new like document
+                const newLikeRef = await addDoc(collection(db, "Likes"), {
+                    Author: doc(db, "Users", currentUserID),
+                    Date: serverTimestamp(),
+                    Grid: gridRef
+                });
+
+                // Add the new like to the grid's Likes array
+                await updateDoc(gridRef, {
+                    Likes: arrayUnion(newLikeRef)
+                });
+                this.likes++;
+            }
+        }
     },
 };
 </script>
@@ -286,7 +400,7 @@ a {
     display: flex;
     padding: 10px;
     border: 1px solid;
-    border-radius: 50em;
+    border-radius: 15px;
 }
 
 .send-icon {
@@ -309,5 +423,17 @@ p+p,
     height: 60px;
     border-radius: 50%;
     object-fit: cover;
+}
+
+.visibility-dropdown select {
+    width: 100px;
+    height: 30px;
+    background-color: white;
+}
+
+.visibility-dropdown {
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 </style>

@@ -1,5 +1,4 @@
 <template>
-  <AppHeader :getResult="setSearchResults" @reset="resetSearch" />
   <div>
     <div v-if="!isSearching">
       <div class="container">
@@ -64,7 +63,6 @@
 </template>
 
 <script setup>
-import AppHeader from "./AppHeader.vue";
 import { useRouter } from "vue-router";
 import { db } from "../firebase";
 import { collection, getDocs } from "firebase/firestore";
@@ -131,12 +129,12 @@ function resetSearch() {
   searchResults.value = [];
 }
 
-function setSearchResults(results, searchingStatus, searching) {
-  searchResults.value = results;
-  console.log(searchResults.value.length); //debug
-  isSearching.value = searchingStatus;
-  searchInput.value = searching;
-}
+// function setSearchResults(results, searchingStatus, searching) {
+//   searchResults.value = results;
+//   console.log(searchResults.value.length); //debug
+//   isSearching.value = searchingStatus;
+//   searchInput.value = searching;
+// }
 
 function navigateToPost() {
   /* postId */

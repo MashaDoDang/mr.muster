@@ -1,5 +1,4 @@
 <template>
-    <AppHeader />
     <div class="profile-container container p-3 my-3 mt-5">
       <div class="user-container">
         <p class="username">{{ name }}</p>
@@ -95,7 +94,6 @@
   </template>
   
   <script setup>
-  import AppHeader from "./AppHeader.vue";
   import { doc, getDoc } from "firebase/firestore";
   import { db } from "../firebase";
   import { ref } from "vue";
