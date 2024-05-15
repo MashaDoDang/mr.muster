@@ -1,11 +1,7 @@
 <template>
   <div class="login-overlay">
     <div class="login-modal">
-      <button
-        class="btn-primary mb-3 btn-close"
-        type="button"
-        @click="closeModal()"
-      ></button>
+      <button class="btn-primary mb-3 btn-close" type="button" @click="closeModal()"></button>
       <form>
         <p class="modal-header" v-if="!resetPasswordRef && !registerModeRef">
           Login
@@ -13,118 +9,54 @@
         <p class="modal-header" v-if="resetPasswordRef">Reset Password</p>
         <p class="modal-header" v-if="registerModeRef">Register</p>
         <div class="register-form">
-          <input
-            type="text"
-            class="form-control mb-3"
-            placeholder="Username"
-            v-model="username"
-            v-if="registerModeRef"
-          />
-          <input
-            type="email"
-            class="form-control mb-3"
-            placeholder="E-mail"
-            v-model="email"
-          />
-          <input
-            type="password"
-            class="form-control mb-3"
-            placeholder="Password"
-            v-model="password"
-            v-if="!resetPasswordRef"
-          />
-          <input
-            type="password"
-            class="form-control mb-3"
-            placeholder="Confirm password"
-            v-model="confirmPassword"
-            v-if="!resetPasswordRef && registerModeRef"
-          />
+          <input type="text" class="form-control mb-3" placeholder="Username" v-model="username"
+            v-if="registerModeRef" />
+          <input type="email" class="form-control mb-3" placeholder="E-mail" v-model="email" />
+          <input type="password" class="form-control mb-3" placeholder="Password" v-model="password"
+            v-if="!resetPasswordRef" />
+          <input type="password" class="form-control mb-3" placeholder="Confirm password" v-model="confirmPassword"
+            v-if="!resetPasswordRef && registerModeRef" />
         </div>
         <div v-if="!resetPasswordRef && !registerModeRef" style="display: grid">
-          <button
-            class="btn-forgot-passwrd"
-            type="button"
-            @click="resetPasswordRef = true"
-          >
+          <button class="btn-forgot-passwrd" type="button" @click="resetPasswordRef = true">
             Forgot Password?
           </button>
-          <button
-            class="btn btn-primary btn-orange mb-3"
-            type="button"
-            @click="handleLogin"
-          >
+          <button class="btn btn-primary btn-orange mb-3" type="button" @click="handleLogin">
             Log in
           </button>
-          <button
-            class="btn btn-primary btn-yellow mb-3"
-            type="button"
-            @click="registerModeRef = true"
-          >
+          <button class="btn btn-primary btn-yellow mb-3" type="button" @click="registerModeRef = true">
             Create a new account
           </button>
           <div class="separator my-3"></div>
           <div style="display: grid">
-            <button
-              class="btn btn-primary mb-3 btn-google"
-              type="button"
-              @click="signInWithGoogle()"
-            >
-              <img
-                src="@/assets/google-icon.webp"
-                alt="Google sign-in"
-                class="google-icon"
-              />
+            <button class="btn btn-primary mb-3 btn-google" type="button" @click="signInWithGoogle()">
+              <img src="@/assets/google-icon.webp" alt="Google sign-in" class="google-icon" />
               Sign in with Google
             </button>
           </div>
         </div>
       </form>
       <div style="display: flex; justify-content: space-evenly; gap: 5px">
-        <button
-          @click="
-            resetPasswordRef = false;
-            registerModeRef = false;
-          "
-          class="btn btn-primary mb-3 btn-yellow"
-          type="button"
-          style="flex: 1"
-          v-if="resetPasswordRef || registerModeRef"
-        >
+        <button @click="
+        resetPasswordRef = false;
+      registerModeRef = false;
+      " class="btn btn-primary mb-3 btn-yellow" type="button" style="flex: 1"
+          v-if="resetPasswordRef || registerModeRef">
           Cancel
         </button>
-        <button
-          @click="resetPassword()"
-          class="btn btn-primary mb-3 btn-orange"
-          type="button"
-          style="flex: 1"
-          v-if="resetPasswordRef"
-        >
+        <button @click="resetPassword()" class="btn btn-primary mb-3 btn-orange" type="button" style="flex: 1"
+          v-if="resetPasswordRef">
           Send
         </button>
-        <button
-          @click="registerUser()"
-          class="btn btn-primary mb-3 btn-orange"
-          type="submit"
-          style="flex: 1"
-          v-if="registerModeRef"
-        >
+        <button @click="registerUser()" class="btn btn-primary mb-3 btn-orange" type="submit" style="flex: 1"
+          v-if="registerModeRef">
           Create Account
         </button>
       </div>
       <div class="separator my-3" v-if="registerModeRef"></div>
-      <button
-        class="btn btn-primary mb-3 btn-google"
-        type="button"
-        style="width: 100%"
-        @click="signInWithGoogle()"
-        v-if="registerModeRef"
-      >
-        <img
-          src="@/assets/google-icon.webp"
-          alt="Google sign-in"
-          class="google-icon"
-        />
+      <button class="btn btn-primary mb-3 btn-google" type="button" style="width: 100%" @click="signInWithGoogle()"
+        v-if="registerModeRef">
+        <img src="@/assets/google-icon.webp" alt="Google sign-in" class="google-icon" />
         Sign in with Google
       </button>
     </div>
@@ -133,7 +65,7 @@
 
 <script setup>
 import { ref, defineEmits, watch, defineProps } from "vue";
-import { auth } from "../firebase";
+import { auth, db } from "../firebase";
 import {
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
@@ -141,6 +73,8 @@ import {
   signInWithPopup,
   createUserWithEmailAndPassword,
 } from "firebase/auth";
+import { getDoc, setDoc, doc } from "firebase/firestore";
+
 
 const props = defineProps({
   registerMode: Boolean,
@@ -198,7 +132,25 @@ async function resetPassword() {
 
 async function signInWithGoogle() {
   try {
-    await signInWithPopup(auth, provider);
+    const result = await signInWithPopup(auth, provider);
+    
+    const userDocRef = doc(db, "Users", result.user.uid);
+    const userDocSnap = await getDoc(userDocRef);
+
+    if (!userDocSnap.exists()) {
+      // User doesn't exist in Firestore, so add them
+      await setDoc(userDocRef, {
+        Email: result.user.email,
+        FollowedBy: [],
+        Follows: [],
+        Icon: result.user.photoURL || "",
+        LikedPosts: [],
+        OwnedGrids: [],
+        Username: result.user.displayName,
+        isAdmin: false
+      });
+    }
+
     closeModal(); // Close modal on successful login
   } catch (error) {
     console.error("Login error:", error);
@@ -228,6 +180,19 @@ function registerUser() {
       console.log("User registered:", userCredential.user);
       closeModal();
       alert(`Welcome ${username.value}! \n\nYour account has been created!`);
+
+      // Add the user to Firestore
+      setDoc(doc(db, "Users", userCredential.user.uid), {
+        Email: email.value,
+        FollowedBy: [],
+        Follows: [],
+        Icon: "",
+        LikedPosts: [],
+        OwnedGrids: [],
+        Username: username.value,
+        isAdmin: false
+      });
+      console.log("User added to Firestore.");
     })
     .catch((error) => {
       console.error("Registration error:", error);
@@ -271,7 +236,8 @@ function getFirebaseErrorMessage(error) {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.5); /* Dark transparent overlay */
+  background-color: rgba(0, 0, 0, 0.5);
+  /* Dark transparent overlay */
   display: flex;
   justify-content: center;
   align-items: center;
