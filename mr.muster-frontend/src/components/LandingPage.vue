@@ -30,7 +30,7 @@
     <div class="search-result-container" v-else>
       <div v-if="searchResults.length === 0">
         <h2>No results found for "{{ searchInput }}"</h2>
-        <button @click="showAllGrids" class="go-back-button">
+        <button @click="navigateToHome" class="go-back-button">
           Back to All Grids
         </button>
       </div>
@@ -54,7 +54,7 @@
             </div>
           </div>
         </div>
-        <button @click="showAllGrids" class="go-back-button">
+        <button @click="navigateToHome" class="go-back-button">
           Back to All Grids
         </button>
       </div>
@@ -65,20 +65,19 @@
 <script setup>
 import { useRouter } from "vue-router";
 import { db } from "../firebase";
-import { collection, getDocs } from "firebase/firestore";
-import { ref } from "vue";
+import { collection, getDocs, doc, getDoc } from "firebase/firestore";
+import { ref, onBeforeMount, watch } from "vue";
 
 const router = useRouter();
 const posts = ref([]);
+
 const searchResults = ref([]);
 const isSearching = ref(false);
-const searchInput = ref("");
-
-async function fetchData() {
-  await getPosts();
-}
+const searchInput = ref('');
 
 async function getPosts() {
+  console.log("fetching data")
+
   const querySnapshot = await getDocs(collection(db, "Grids"));
   querySnapshot.forEach((doc) => {
     const data = doc.data();
@@ -90,7 +89,24 @@ async function getPosts() {
     }
   });
 }
-fetchData();
+
+onBeforeMount(async () => {
+  console.log(router); //debug
+  console.log(isSearching.value)
+  router.push('/');
+  await getPosts();
+});
+
+watch([
+  () => router.currentRoute.value.query.search,
+  () => router.currentRoute.value.query.criteria],
+  async ([newSearch, newCriteria]) => {
+  resetSearch();
+  if (newSearch) {
+      searchInput.value = newSearch;
+      await handleSearch(newCriteria);
+    }
+});
 
 const columnsPosts = () => {
   const columnCount = 3;
@@ -118,23 +134,57 @@ const columnsResults = () => {
   return result;
 };
 
-function showAllGrids() {
-  resetIsSearching();
-  resetSearch();
-}
-function resetIsSearching() {
-  isSearching.value = false;
-}
-function resetSearch() {
-  searchResults.value = [];
+async function handleSearch(searchCriteria) {
+  isSearching.value = true;
+  const querySnapshot = await getDocs(collection(db, "Grids")); // search | grids | criteria
+  querySnapshot.forEach(async (document) => {
+    const data = document.data();
+    if (searchCriteria === "option-title") {
+      const searchForTitle = data.Title.toLowerCase();
+      if (searchForTitle.includes(searchInput.value.toLowerCase())) {
+        console.log(
+          searchForTitle,
+          searchInput.value.toLowerCase(),
+          searchForTitle.includes(searchInput.value.toLowerCase())
+        );                                                              //debug
+
+        searchResults.value.push({
+          id: document.id,
+          postUrl: data.Content,
+        });
+      }
+    } else if (searchCriteria === "option-author") {
+      const userRef = doc(db, "Users", data.Author.path.split("/")[1]);
+      const userSnap = await getDoc(userRef);
+      const userData = userSnap.data();
+      const searchForUsername = userData.Username.toLowerCase();
+      if (searchForUsername.includes(searchInput.value.toLowerCase())) {
+
+        console.log(
+          searchForUsername,
+          searchInput.value.toLowerCase(),
+          searchForUsername.includes(searchInput.value.toLowerCase())
+        );                                                                     //debug
+
+        searchResults.value.push({
+          id: document.id,
+          postUrl: data.Content,
+        });
+      }
+    }
+  });
 }
 
-// function setSearchResults(results, searchingStatus, searching) {
-//   searchResults.value = results;
-//   console.log(searchResults.value.length); //debug
-//   isSearching.value = searchingStatus;
-//   searchInput.value = searching;
-// }
+function resetSearch() {
+  isSearching.value = false;
+  searchResults.value = [];
+  searchInput.value = '';
+}
+
+function navigateToHome() {
+  resetSearch();
+  router.push("/");
+}
 
 function navigateToPost() {
   /* postId */
@@ -260,6 +310,6 @@ function navigateToCreate() {
 }
 
 .search-result-container {
-  margin-bottom: 5vh;
+  margin: 10vh 0;
 }
 </style>
