@@ -125,6 +125,7 @@ export default {
     display: flex;
     justify-content: left;
     font-size: 18px;
+    white-space: pre-wrap;
 }
 
 .user-comment {
