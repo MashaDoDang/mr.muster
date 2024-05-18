@@ -199,7 +199,7 @@ async function addToStorageAndSaveAsGrid(isPrivate) {
         Likes: [],
         PostedDate: new Date(),
         Title: gridName.value,
-        isReported: false
+        isReported: [] // Initialize isReported as an empty array
       });
 
       console.log("Document written with ID: ", docRef.id);

@@ -82,7 +82,7 @@ async function getPosts() {
   const querySnapshot = await getDocs(collection(db, "Grids"));
   querySnapshot.forEach((doc) => {
     const data = doc.data();
-    if (data.Content && !data.IsPrivate && !data.isReported) {
+    if (data.Content && !data.IsPrivate) {
       posts.value.push({
         id: doc.id,
         postUrl: data.Content,
