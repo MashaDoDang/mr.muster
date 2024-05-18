@@ -94,10 +94,13 @@
   </template>
   
   <script setup>
+  import { useRoute } from "vue-router";
   import { doc, getDoc } from "firebase/firestore";
   import { db } from "../firebase";
   import { ref } from "vue";
-  
+
+  const route = useRoute();
+  const userProfileID = ref('');
   const followedBy = ref(0);
   const follows = ref(0);
   const likes = ref(0);
@@ -105,6 +108,10 @@
   const userIcon = ref("");
   const userGrids = ref([]);
   const likedGrids = ref([]);
+
+  console.log(route.params.id);
+
+  userProfileID.value = route.params.id;
   
   const getUserInfo = async (userId) => {
     const userRef = doc(db, "Users", userId);
@@ -157,7 +164,7 @@
     });
     return result;
   };
-  getUserInfo("jrnuchB4pHUb30awW6wMinzvKru1");
+  getUserInfo(userProfileID.value);
   </script>
   
   <style scoped>
