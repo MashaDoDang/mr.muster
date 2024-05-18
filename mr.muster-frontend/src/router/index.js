@@ -11,7 +11,7 @@ const routes = [
   { path: '/AppHeader', name: 'AppHeader', component: AppHeader },
   { path: '/view-post', name: 'ViewPost', component: ViewPost },
   { path: '/view-post/:id', name: 'ViewPost', component: ViewPost },
-  { path: '/user-profile', name: 'UserProfile', component: UserProfile },
+  { path: '/user-profile/:id', name: 'UserProfile', component: UserProfile },
   { path: '/create', name: 'CreatePost', component: CreateGrid },
 ];
 

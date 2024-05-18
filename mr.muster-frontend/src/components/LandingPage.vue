@@ -76,8 +76,6 @@ const isSearching = ref(false);
 const searchInput = ref('');
 
 async function getPosts() {
-  console.log("fetching data")
-
   const querySnapshot = await getDocs(collection(db, "Grids"));
   querySnapshot.forEach((doc) => {
     const data = doc.data();
@@ -91,8 +89,6 @@ async function getPosts() {
 }
 
 onBeforeMount(async () => {
-  console.log(router); //debug
-  console.log(isSearching.value)
   router.push('/');
   await getPosts();
 });
@@ -136,18 +132,12 @@ const columnsResults = () => {
 
 async function handleSearch(searchCriteria) {
   isSearching.value = true;
-  const querySnapshot = await getDocs(collection(db, "Grids")); // search | grids | criteria
+  const querySnapshot = await getDocs(collection(db, "Grids"));
   querySnapshot.forEach(async (document) => {
     const data = document.data();
     if (searchCriteria === "option-title") {
       const searchForTitle = data.Title.toLowerCase();
       if (searchForTitle.includes(searchInput.value.toLowerCase())) {
-        console.log(
-          searchForTitle,
-          searchInput.value.toLowerCase(),
-          searchForTitle.includes(searchInput.value.toLowerCase())
-        );                                                              //debug
-
         searchResults.value.push({
           id: document.id,
           postUrl: data.Content,
@@ -159,13 +149,6 @@ async function handleSearch(searchCriteria) {
       const userData = userSnap.data();
       const searchForUsername = userData.Username.toLowerCase();
       if (searchForUsername.includes(searchInput.value.toLowerCase())) {
-
-        console.log(
-          searchForUsername,
-          searchInput.value.toLowerCase(),
-          searchForUsername.includes(searchInput.value.toLowerCase())
-        );                                                                     //debug
-
         searchResults.value.push({
           id: document.id,
           postUrl: data.Content,
