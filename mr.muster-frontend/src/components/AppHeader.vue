@@ -14,11 +14,7 @@
   <nav>
     <div class="top-nav">
       <div class="logo">
-        <img
-          src="../assets/cat-logo.png"
-          alt="logo"
-          @click="navigateToHome()"
-        />
+        <RouterLink to="/"><img :src="logo" alt="logo"/></RouterLink>
       </div>
       <div class="buttons-container" v-if="!userState">
         <button class="btn log-button" @click="openLoginModal()">Log in</button>
@@ -28,9 +24,11 @@
       </div>
       <div class="buttons-container" style="gap: 20px" v-else>
         <div class="user-container">
-          <button @click="navigateToUserProfile()" class="button-image">
-            <img src="../assets/mock-user.png" class="image-button" />
-          </button>
+          <RouterLink :to="`/user-profile/${userID}`">
+            <button class="button-image">
+              <img :src="userIcon" class="image-button" />
+            </button>
+          </RouterLink>
         </div>
         <button class="btn sign-button" @click="logout">Log out</button>
       </div>
@@ -72,11 +70,16 @@ import { ref } from "vue";
 import LoginModal from "./LoginModal.vue";
 import { auth } from "../firebase";
 import { signOut } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../firebase";
 
 const router = useRouter();
 const userState = ref(false);
 const openLogin = ref(false);
 const registerModeRef = ref(false);
+const userID =  ref("");
+const userIcon = ref("");
+const logo = ref("https://firebasestorage.googleapis.com/v0/b/mrmuster.appspot.com/o/cat-logo.png?alt=media&token=04a58dcb-e889-4df9-8fe8-0bc6301349b2");
 
 const searchCriteria = ref("option-title");
 const searchInput = ref("");
@@ -92,16 +95,23 @@ function openRegisterModal() {
   registerModeRef.value = true;
 }
 
-onAuthStateChanged(auth, (user) => {
-  userState.value = !!user; // shorthand to convert truthy/falsy to boolean
+onAuthStateChanged(auth, async (user) => {
+  if (user) {  
+    userState.value = !!user; // shorthand to convert truthy/falsy to boolean
+    userID.value = auth.currentUser.uid; 
+  
+    await getUserIcon();
+  }
 });
 
-function navigateToHome() {
-  router.push("/");
-}
-
-function navigateToUserProfile() {
-  router.push("/user-profile");
+async function getUserIcon() {
+  console.log(userID.value);
+  const userRef = doc(db, "Users", userID.value);
+  const userSnap = await getDoc(userRef);
+  const userData = userSnap.data();
+  if (userData) {
+    userIcon.value = userData.Icon;
+  }
 }
 
 function closeModal() {
