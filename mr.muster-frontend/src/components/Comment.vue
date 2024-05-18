@@ -8,7 +8,7 @@
         <div class="comment">
             <div>
                 <div class="comment-content">
-                    <p class="username">@{{ userID }}</p>
+                    <RouterLink :to="`/user-profile/${userID}`" class="username-comment">@{{ username }}</RouterLink>
                     <p>{{ date }}</p>
                     <div v-if="isCurrentUserAuthor" class="comment-icons"
                         style="display: flex; gap: 10px; align-items: center;">
@@ -41,7 +41,7 @@ import { doc, deleteDoc, arrayRemove, updateDoc } from "firebase/firestore";
 
 export default {
     name: "user-comment",
-    props: ["commentRef", "comment", "user", "userID", "userIcon"],
+    props: ["commentRef", "comment", "user", "userID", "username", "userIcon"],
     data() {
         return {
             date: '',
@@ -149,5 +149,13 @@ export default {
     width: 20px;
     height: 20px;
     cursor: pointer;
+}
+.username-comment {
+    text-decoration: none;
+    color:black;
+}
+.username-comment:hover {
+    text-decoration: underline;
+    font-weight: 300;
 }
 </style>
