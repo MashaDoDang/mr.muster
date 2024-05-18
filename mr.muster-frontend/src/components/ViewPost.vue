@@ -145,7 +145,7 @@ export default {
             const gridID = this.$route.params.id;
             const gridRef = doc(db, "Grids", gridID);
             await updateDoc(gridRef, {
-                isPrivate: this.isPrivate === 'true',
+                IsPrivate: this.isPrivate === 'true',
             });
         },
         async fetchComments(commentsRefs) {
