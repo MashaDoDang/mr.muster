@@ -96,8 +96,8 @@ function openRegisterModal() {
 }
 
 onAuthStateChanged(auth, async (user) => {
+  userState.value = !!user; // shorthand to convert truthy/falsy to boolean
   if (user) {  
-    userState.value = !!user; // shorthand to convert truthy/falsy to boolean
     userID.value = auth.currentUser.uid; 
   
     await getUserIcon();
@@ -108,7 +108,6 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 async function getUserIcon() {
-  console.log(userID.value);
   const userRef = doc(db, "Users", userID.value);
   const userSnap = await getDoc(userRef);
   const userData = userSnap.data();
