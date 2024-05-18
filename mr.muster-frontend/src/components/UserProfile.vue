@@ -26,7 +26,8 @@
     </div>
     <div class="profile-grids container p-3 my-3 mt-5">
       <div class="user-grids grids-container">
-        <p>Patterns created by you</p>
+        <p v-if="isLoggedUserProfile">Patterns created by you</p>
+        <p v-else>Patterns created by {{ name }}</p>
         <div class="pic-grid mt-3" v-if="userHasPosts()">
           <div class="row">
             <div
@@ -43,14 +44,16 @@
           </div>
         </div>
         <div v-else>
-          <p>You haven't created any patterns yet.</p>
+          <p v-if="isLoggedUserProfile">You haven't created any patterns yet.</p>
+          <p v-else>{{ name }} hasn't created any patterns yet.</p>
         </div>
       </div>
   
       <div class="vr"></div>
   
       <div class="liked-grids grids-container">
-        <p>Your Favourites</p>
+        <p v-if="isLoggedUserProfile">Your Favourites</p>
+        <p v-else>{{ name }}'s Favourites</p>
         <div class="pic-grid mt-3" v-if="userLikedPosts()">
           <div class="row">
             <div
@@ -67,7 +70,8 @@
           </div>
         </div>
         <div v-else>
-            <p>You haven't liked any patterns yet.</p>
+            <p v-if="isLoggedUserProfile">You haven't liked any patterns yet.</p>
+            <p v-else>{{ name }} hasn't liked any patterns yet.</p>
         </div>
       </div>
     </div>
@@ -78,6 +82,7 @@
   import { doc, getDoc } from "firebase/firestore";
   import { db } from "../firebase";
   import { ref } from "vue";
+  import { getAuth, onAuthStateChanged } from "firebase/auth";
 
   const route = useRoute();
   const userProfileID = ref('');
@@ -88,6 +93,7 @@
   const userIcon = ref("");
   const userGrids = ref([]);
   const likedGrids = ref([]);
+  const isLoggedUserProfile = ref(false);
 
   userProfileID.value = route.params.id;
   
@@ -105,6 +111,9 @@
         for (let i = 0; i < userData.OwnedGrids.length; i++) {
           const gridID = userData.OwnedGrids[i].path.split("/")[1];
           const gridInfo = await fetchGridInfo(gridID);
+          if (!isLoggedUserProfile.value && gridInfo.IsPrivate) {
+            continue;
+          }
           userGrids.value.push(gridInfo);
         }
       }
@@ -112,6 +121,9 @@
         for (let i = 0; i < userData.LikedPosts.length; i++) {
           const gridID = userData.LikedPosts[i].path.split("/")[1];
           const gridInfo = await fetchGridInfo(gridID);
+          if (!isLoggedUserProfile.value && gridInfo.IsPrivate) {
+            continue;
+          }
           likedGrids.value.push(gridInfo);
         }
       }
@@ -126,6 +138,7 @@
       return {
         id: gridId,
         postUrl: gridData.Content,
+        IsPrivate: gridData.IsPrivate,
       };
     }
   };
@@ -153,6 +166,11 @@
     return likedGrids.value.length > 0;
   }
 
+  onAuthStateChanged(getAuth(), (user) => {
+    if (user) {
+      isLoggedUserProfile.value = user.uid === userProfileID.value;
+    }
+  });
   </script>
   
   <style scoped>
