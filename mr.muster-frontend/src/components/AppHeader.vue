@@ -101,7 +101,10 @@ onAuthStateChanged(auth, async (user) => {
     userID.value = auth.currentUser.uid; 
   
     await getUserIcon();
+  } else {
+    userState.value = false;
   }
+
 });
 
 async function getUserIcon() {

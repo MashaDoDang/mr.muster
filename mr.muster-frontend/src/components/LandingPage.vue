@@ -16,7 +16,7 @@
           <div class="col" v-for="(column, columnIndex) in columnsPosts()" :key="columnIndex">
             <template v-for="post in column" :key="post.id">
               <RouterLink :to="`/view-post/${post.id}`">
-                <img :src="post.postUrl" class="img-post" @click="navigateToPost()" />
+                <img :src="post.postUrl" class="img-post"/>
               </RouterLink>
             </template>
           </div>
@@ -45,7 +45,6 @@
                 <img
                   :src="post.postUrl"
                   class="img"
-                  @click="navigateToPost()"
                 />
               </template>
             </div>
@@ -76,7 +75,7 @@ async function getPosts() {
   const querySnapshot = await getDocs(collection(db, "Grids"));
   querySnapshot.forEach((doc) => {
     const data = doc.data();
-    if (data.Content && !data.IsPrivate && !data.isReported) {
+    if (data.Content && !data.IsPrivate) {
       posts.value.push({
         id: doc.id,
         postUrl: data.Content,
@@ -164,10 +163,6 @@ function resetSearch() {
 function navigateToHome() {
   resetSearch();
   router.push("/");
-}
-
-function navigateToPost() {
-  router.push("/view-post");
 }
 
 function navigateToCreate() {
