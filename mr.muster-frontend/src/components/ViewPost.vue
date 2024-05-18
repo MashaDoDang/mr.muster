@@ -36,10 +36,12 @@
                     </div>
                 </div>
                 <div class="user-comment user-container">
-                    <p>@{{ gridAuthor }}</p>
-                    <button @click="handleButtonClick" class="button-image">
-                        <img :src="authorIcon" class="image-button">
-                    </button>
+                    <RouterLink :to="`/user-profile/${authorID}`" class="author-id">
+                        <p>@{{ gridAuthor }}</p>
+                        <button @click="handleButtonClick" class="button-image">
+                            <img :src="authorIcon" class="image-button">
+                        </button>
+                    </RouterLink>
                 </div>
             </div>
 
@@ -187,18 +189,9 @@ export default {
                 const [userID, username, userIcon] = this.commentUsersIDs[commentID];
                 const user = this.allUsers[userID];
                 const commentRef = doc(db, 'Comments', commentID);
-                // console.log(user);
                 return { comment, user, userID, username, userIcon, commentRef };
             }).filter(comment => comment !== null, userIcon => userIcon !== "");
         },
-        // renderUsers() {
-        //     if (!this.allUsers) {
-        //         return [];
-        //     }
-        //     return Object.keys(this.allUsers).map(commentID => {
-        //         return this.allUsers[this.commentUsersIDs[commentID][0]];
-        //     });
-        // },
         async addComment() {
             this.newComment = this.newComment.trim();
             if (this.newComment === '') {
@@ -435,5 +428,12 @@ p+p,
     display: flex;
     justify-content: center;
     align-items: center;
+}
+.author-id p, .author-id button {
+    transition: 0.3s ease;
+}
+.author-id p:hover, .author-id button:hover {
+    text-decoration: underline;
+    font-weight: 300;
 }
 </style>
