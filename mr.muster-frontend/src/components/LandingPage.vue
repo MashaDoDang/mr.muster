@@ -13,14 +13,11 @@
       </div>
       <div class="pic-grid">
         <div class="row">
-          <div
-            class="col"
-            v-for="(column, columnIndex) in columnsPosts()"
-            :key="columnIndex"
-          >
+          <div class="col" v-for="(column, columnIndex) in columnsPosts()" :key="columnIndex">
             <template v-for="post in column" :key="post.id">
-              <img :src="post.postUrl" class="img" @click="navigateToPost()" />
-              <!-- post.id -->
+              <RouterLink :to="`/view-post/${post.id}`">
+                <img :src="post.postUrl" class="img-post"/>
+              </RouterLink>
             </template>
           </div>
         </div>
@@ -30,7 +27,7 @@
     <div class="search-result-container" v-else>
       <div v-if="searchResults.length === 0">
         <h2>No results found for "{{ searchInput }}"</h2>
-        <button @click="showAllGrids" class="go-back-button">
+        <button @click="navigateToHome" class="go-back-button">
           Back to All Grids
         </button>
       </div>
@@ -48,13 +45,12 @@
                 <img
                   :src="post.postUrl"
                   class="img"
-                  @click="navigateToPost()"
                 />
               </template>
             </div>
           </div>
         </div>
-        <button @click="showAllGrids" class="go-back-button">
+        <button @click="navigateToHome" class="go-back-button">
           Back to All Grids
         </button>
       </div>
@@ -65,18 +61,15 @@
 <script setup>
 import { useRouter } from "vue-router";
 import { db } from "../firebase";
-import { collection, getDocs } from "firebase/firestore";
-import { ref } from "vue";
+import { collection, getDocs, doc, getDoc } from "firebase/firestore";
+import { ref, onBeforeMount, watch } from "vue";
 
 const router = useRouter();
 const posts = ref([]);
+
 const searchResults = ref([]);
 const isSearching = ref(false);
-const searchInput = ref("");
-
-async function fetchData() {
-  await getPosts();
-}
+const searchInput = ref('');
 
 async function getPosts() {
   const querySnapshot = await getDocs(collection(db, "Grids"));
@@ -90,7 +83,22 @@ async function getPosts() {
     }
   });
 }
-fetchData();
+
+onBeforeMount(async () => {
+  router.push('/');
+  await getPosts();
+});
+
+watch([
+  () => router.currentRoute.value.query.search,
+  () => router.currentRoute.value.query.criteria],
+  async ([newSearch, newCriteria]) => {
+  resetSearch();
+  if (newSearch) {
+      searchInput.value = newSearch;
+      await handleSearch(newCriteria);
+    }
+});
 
 const columnsPosts = () => {
   const columnCount = 3;
@@ -118,27 +126,43 @@ const columnsResults = () => {
   return result;
 };
 
-function showAllGrids() {
-  resetIsSearching();
-  resetSearch();
+async function handleSearch(searchCriteria) {
+  isSearching.value = true;
+  const querySnapshot = await getDocs(collection(db, "Grids"));
+  querySnapshot.forEach(async (document) => {
+    const data = document.data();
+    if (searchCriteria === "option-title") {
+      const searchForTitle = data.Title.toLowerCase();
+      if (searchForTitle.includes(searchInput.value.toLowerCase())) {
+        searchResults.value.push({
+          id: document.id,
+          postUrl: data.Content,
+        });
+      }
+    } else if (searchCriteria === "option-author") {
+      const userRef = doc(db, "Users", data.Author.path.split("/")[1]);
+      const userSnap = await getDoc(userRef);
+      const userData = userSnap.data();
+      const searchForUsername = userData.Username.toLowerCase();
+      if (searchForUsername.includes(searchInput.value.toLowerCase())) {
+        searchResults.value.push({
+          id: document.id,
+          postUrl: data.Content,
+        });
+      }
+    }
+  });
 }
-function resetIsSearching() {
-  isSearching.value = false;
-}
+
 function resetSearch() {
+  isSearching.value = false;
   searchResults.value = [];
+  searchInput.value = '';
 }
 
-// function setSearchResults(results, searchingStatus, searching) {
-//   searchResults.value = results;
-//   console.log(searchResults.value.length); //debug
-//   isSearching.value = searchingStatus;
-//   searchInput.value = searching;
-// }
-
-function navigateToPost() {
-  /* postId */
-  router.push("/view-post");
+function navigateToHome() {
+  resetSearch();
+  router.push("/");
 }
 
 function navigateToCreate() {
@@ -240,15 +264,17 @@ function navigateToCreate() {
   gap: 20px;
 }
 
-.img {
+.img-post {
   width: 100%;
   box-shadow: 1px 1px 1px rgba(0, 0, 0, 0.1);
   border-radius: 10px;
   margin-bottom: 4vh;
+  transition: box-shadow 0.3s ease;
 }
 
-.img:hover {
+.img-post:hover {
   cursor: pointer;
+  box-shadow: -8px 8px 8px rgba(105,16,119, 0.4);
 }
 
 .search-container {
@@ -260,6 +286,6 @@ function navigateToCreate() {
 }
 
 .search-result-container {
-  margin-bottom: 5vh;
+  margin: 10vh 0;
 }
 </style>

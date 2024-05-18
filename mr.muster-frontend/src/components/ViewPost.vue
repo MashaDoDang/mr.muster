@@ -1,5 +1,4 @@
 <template>
-
     <head>
         <link rel="stylesheet"
             href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,200,0,0" />
@@ -40,10 +39,12 @@
                     </div>
                 </div>
                 <div class="user-comment user-container">
-                    <p>@{{ gridAuthor }}</p>
-                    <button @click="handleButtonClick" class="button-image">
-                        <img :src="authorIcon" class="image-button">
-                    </button>
+                    <RouterLink :to="`/user-profile/${authorID}`" class="author-id">
+                        <p>@{{ gridAuthor }}</p>
+                        <button @click="handleButtonClick" class="button-image">
+                            <img :src="authorIcon" class="image-button">
+                        </button>
+                    </RouterLink>
                 </div>
             </div>
 
@@ -54,7 +55,7 @@
             <div class="comment-box">
                 <p v-if="!renderComments().length" style="margin-top: 40px;">Be the first to leave a comment!</p>
                 <Comment v-for="item in renderComments()" :key="item.comment.id" :comment="item.comment" :user="item"
-                    :userID="item.username" :userIcon="item.userIcon" :commentRef="item.commentRef"
+                    :userID="item.userID" :username="item.username" :userIcon="item.userIcon" :commentRef="item.commentRef"
                     @commentDeleted="handleCommentDeleted" @removeCommentFromState="removeCommentFromState"
                     @commentUpdated="handleCommentUpdated" />
             </div>
@@ -164,7 +165,7 @@ export default {
             const gridID = this.$route.params.id;
             const gridRef = doc(db, "Grids", gridID);
             await updateDoc(gridRef, {
-                isPrivate: this.isPrivate === 'true',
+                IsPrivate: this.isPrivate === 'true',
             });
         },
         async fetchComments(commentsRefs) {
@@ -208,14 +209,6 @@ export default {
                 const commentRef = doc(db, 'Comments', commentID);
                 return { comment, user, userID, username, userIcon, commentRef };
             }).filter(comment => comment !== null, userIcon => userIcon !== "");
-        },
-        renderUsers() {
-            if (!this.allUsers) {
-                return [];
-            }
-            return Object.keys(this.allUsers).map(commentID => {
-                return this.allUsers[this.commentUsersIDs[commentID][0]];
-            });
         },
         async addComment() {
             this.newComment = this.newComment.trim();

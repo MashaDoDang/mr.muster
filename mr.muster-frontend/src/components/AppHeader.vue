@@ -14,11 +14,7 @@
   <nav>
     <div class="top-nav">
       <div class="logo">
-        <img
-          src="../assets/cat-logo.png"
-          alt="logo"
-          @click="navigateToHome()"
-        />
+        <RouterLink to="/"><img :src="logo" alt="logo"/></RouterLink>
       </div>
       <div class="buttons-container" v-if="!userState">
         <button class="btn log-button" @click="openLoginModal()">Log in</button>
@@ -28,9 +24,11 @@
       </div>
       <div class="buttons-container" style="gap: 20px" v-else>
         <div class="user-container">
-          <button @click="navigateToUserProfile()" class="button-image">
-            <img src="../assets/mock-user.png" class="image-button" />
-          </button>
+          <RouterLink :to="`/user-profile/${userID}`">
+            <button class="button-image">
+              <img :src="userIcon" class="image-button" />
+            </button>
+          </RouterLink>
         </div>
         <button class="btn sign-button" @click="logout">Log out</button>
       </div>
@@ -68,29 +66,24 @@
 <script setup>
 import { useRouter } from "vue-router";
 import { onAuthStateChanged } from "firebase/auth";
-import { ref, defineProps, defineEmits } from "vue";
+import { ref } from "vue";
 import LoginModal from "./LoginModal.vue";
-import { auth, db } from "../firebase";
+import { auth } from "../firebase";
 import { signOut } from "firebase/auth";
-import { collection, getDocs, getDoc, doc } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../firebase";
 
 const router = useRouter();
 const userState = ref(false);
 const openLogin = ref(false);
 const registerModeRef = ref(false);
+const userID =  ref("");
+const userIcon = ref("");
+const logo = ref("https://firebasestorage.googleapis.com/v0/b/mrmuster.appspot.com/o/cat-logo.png?alt=media&token=04a58dcb-e889-4df9-8fe8-0bc6301349b2");
 
 const searchCriteria = ref("option-title");
 const searchInput = ref("");
-const searchResults = ref([]);
-const isSearching = ref(false);
 
-const emit = defineEmits(["reset"]);
-
-const props = defineProps({
-  getResult: {
-    type: Function,
-  },
-});
 
 function openLoginModal() {
   openLogin.value = true;
@@ -102,16 +95,25 @@ function openRegisterModal() {
   registerModeRef.value = true;
 }
 
-onAuthStateChanged(auth, (user) => {
+onAuthStateChanged(auth, async (user) => {
   userState.value = !!user; // shorthand to convert truthy/falsy to boolean
+  if (user) {  
+    userID.value = auth.currentUser.uid; 
+  
+    await getUserIcon();
+  } else {
+    userState.value = false;
+  }
+
 });
 
-function navigateToHome() {
-  router.push("/");
-}
-
-function navigateToUserProfile() {
-  router.push("/user-profile");
+async function getUserIcon() {
+  const userRef = doc(db, "Users", userID.value);
+  const userSnap = await getDoc(userRef);
+  const userData = userSnap.data();
+  if (userData) {
+    userIcon.value = userData.Icon;
+  }
 }
 
 function closeModal() {
@@ -126,57 +128,10 @@ function saveChoice() {
   localStorage.setItem("searchCriteria", searchCriteria.value);
 }
 
-const resetSearch = () => {
-  searchResults.value = [];
-};
-
-async function saveInput() {
-  emit("reset");
-  resetSearch();
-  saveChoice();
+function saveInput() {
   localStorage.setItem("searchInput", searchInput.value);
-  await handleSearch(searchInput.value, searchCriteria.value);
-  console.log(searchResults.value.length);
-  isSearching.value = true;
-  props.getResult(searchResults.value, isSearching.value, searchInput.value);
+  router.push({ name: "LandingPage", query: { search: searchInput.value, criteria: searchCriteria.value } });
   searchInput.value = "";
-}
-
-async function handleSearch(searchInput, searchCriteria) {
-  const querySnapshot = await getDocs(collection(db, "Grids")); // search | grids | criteria
-  querySnapshot.forEach(async (document) => {
-    const data = document.data();
-    if (searchCriteria === "option-title") {
-      const searchForTitle = data.Title.toLowerCase();
-      if (searchForTitle.includes(searchInput.toLowerCase())) {
-        console.log(
-          searchForTitle,
-          searchInput.toLowerCase(),
-          searchForTitle.includes(searchInput.toLowerCase())
-        ); //debug
-        searchResults.value.push({
-          id: document.id,
-          postUrl: data.Content,
-        });
-      }
-    } else if (searchCriteria === "option-author") {
-      const userRef = doc(db, "Users", data.Author.path.split("/")[1]);
-      const userSnap = await getDoc(userRef);
-      const userData = userSnap.data();
-      const searchForUsername = userData.Username.toLowerCase();
-      if (searchForUsername.includes(searchInput.toLowerCase())) {
-        console.log(
-          searchForUsername,
-          searchInput.toLowerCase(),
-          searchForUsername.includes(searchInput.toLowerCase())
-        ); //debug
-        searchResults.value.push({
-          id: document.id,
-          postUrl: data.Content,
-        });
-      }
-    }
-  });
 }
 </script>
 
