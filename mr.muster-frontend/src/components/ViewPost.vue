@@ -537,4 +537,13 @@ p+p,
 .flag-icon {
     height: 30px;
 }
+
+.author-id p, .author-id button {
+    transition: 0.3s ease;
+}
+
+.author-id p:hover, .author-id button:hover {
+    text-decoration: underline;
+    font-weight: 300;
+}
 </style>
