@@ -12,15 +12,18 @@
             <img :src="content" style="height: 60%; max-height: 65vh; object-fit: contain;">
             <div class="top-comment-section">
                 <div class="name-top-com-section">
-                    <div style="display: flex; gap: 20px">
+                    <div style="display: flex; gap: 20px; align-items: center;">
                         <p class="sub-header" v-if="!editMode">{{ title }}</p>
                         <input class="sub-header" v-else v-model="newTitle" @blur="updateTitle"
                             @keyup.enter="updateTitle" v-focus />
-                        <button @click="toggleEditMode" v-if="!editMode && isAuthor"
+                        <button @click="toggleEditMode" v-if="!editMode && (isAuthor || isAdmin)"
                             class="material-symbols-outlined edit-icon">edit</button>
-                        <button @click="openDeleteModal" v-if="!editMode && isAuthor"
-                            class="material-symbols-outlined trash-icon">delete</button>
-                        <div v-if="!editMode && isAuthor" class="visibility-dropdown">
+                        <button @click="openDeleteModal" v-if="!editMode && (isAuthor || isAdmin)"
+                            class="material-symbols-outlined trash-icon" style="height: 30px;">delete</button>
+                        <button @click="toggleReport" v-if="!editMode && !isAuthor && isLoggedIn" class="material-symbols-outlined">
+                            {{ isReported ? 'report_off' : 'report' }}
+                        </button>
+                        <div v-if="!editMode && (isAuthor || isAdmin)" class="visibility-dropdown">
                             <select v-model="isPrivate" @change="toggleVisibility">
                                 <option value="false">Public</option>
                                 <option value="true">Private</option>
@@ -31,7 +34,7 @@
                         <p>{{ commentsAmount }} comments</p>
                         <div style="display: flex;">
                             <p> {{ likes }}</p>
-                            <button class="material-symbols-outlined like-icon" @click="likeGrid">favorite</button>
+                            <button class="material-symbols-outlined like-icon" @click="toggleLike">favorite</button>
                         </div>
                     </div>
                 </div>
@@ -66,7 +69,9 @@
 <script>
 import Comment from "./Comment.vue";
 import { db } from "../firebase";
-import { doc, getDoc, addDoc, collection, arrayUnion, updateDoc, deleteDoc, serverTimestamp, arrayRemove } from "firebase/firestore";
+import { doc, getDoc, addDoc, collection, arrayUnion, updateDoc, deleteDoc, arrayRemove, serverTimestamp, query, where, getDocs } from "firebase/firestore";
+import { storage } from "../firebase";
+import { deleteObject, ref } from "firebase/storage";
 import { getAuth } from "firebase/auth";
 import { onAuthStateChanged } from "firebase/auth";
 import DeleteModal from "./DeleteModal.vue";
@@ -96,22 +101,34 @@ export default {
             editMode: false,
             newTitle: '',
             isAuthor: false,
+            isAdmin: false,
             authorID: null,
             isPrivate: false,
             showDeleteModal: false,
             isDeleting: false,
+            isReported: false,
+            reports: [],
+            isLoggedIn: false,
         };
     },
     async created() {
         await this.getGridInfo();
         const auth = getAuth();
-        onAuthStateChanged(auth, (user) => {
+        onAuthStateChanged(auth, async (user) => {
             if (user) {
                 // User is signed in, check if the user is the author
                 this.isAuthor = user.uid === this.authorID;
+                const userDoc = await getDoc(doc(db, 'Users', user.uid));
+                this.isAdmin = userDoc.data().isAdmin;
+                // Calculate isReported
+                this.isReported = this.reports.includes(`/Users/${user.uid}`);
+                this.isLoggedIn = true;
             } else {
-                // User is signed out, set isAuthor to false
+                // User is signed out, set isAuthor and isReported to false
                 this.isAuthor = false;
+                this.isReported = false;
+                this.isLoggedIn = false;
+                this.isAdmin = false;
             }
         });
     },
@@ -127,6 +144,7 @@ export default {
                 this.isPrivate = gridData.IsPrivate;
                 this.likes = gridData.Likes ? gridData.Likes.length : 0;
                 this.commentsAmount = gridData.Comments ? gridData.Comments.length : 0;
+                this.reports = gridData.isReported || [];
 
                 const authorID = gridData.Author;
                 if (authorID) {
@@ -209,7 +227,7 @@ export default {
                 Content: this.newComment,
                 Date: new Date(),
                 Grid: gridRef,
-                isReported: false
+                isReported: [],
             };
 
             const commentRef = await addDoc(collection(db, "Comments"), comment);
@@ -262,44 +280,118 @@ export default {
             this.isDeleting = true;
             const gridID = this.$route.params.id;
             const gridRef = doc(db, "Grids", gridID);
+            const gridSnap = await getDoc(gridRef);
+            const gridData = gridSnap.data();
+
+            // Delete the resource from Firebase Storage
+            const storageRef = ref(storage, gridData.Content);
+            try {
+                await deleteObject(storageRef);
+            } catch (error) {
+                console.error("Error deleting object:", error);
+            }
+
+            // Delete all comments connected to the grid
+            const comments = gridData.Comments;
+            for (const commentRef of comments) {
+                await deleteDoc(commentRef);
+            }
+
+            // Delete all likes connected to the grid
+            const likes = gridData.Likes;
+            for (const likeRef of likes) {
+                await deleteDoc(likeRef);
+            }
+
+            // Delete the grid itself
             await deleteDoc(gridRef);
-            // Redirect to another page or show a message
+
+            // Delete reference to the grid from the author's OwnedGrids array
+            const authorRef = gridData.Author;
+            await updateDoc(authorRef, {
+                OwnedGrids: arrayRemove(gridRef)
+            });
+
+            // Delete reference to the grid from all users' LikedPosts array
+            const usersRef = collection(db, "Users");
+            const usersSnap = await getDocs(usersRef);
+            usersSnap.forEach(async (userDoc) => {
+                const userData = userDoc.data();
+                const likedPostsRefs = userData.LikedPosts;
+                for (const likedPostRef of likedPostsRefs) {
+                    if (likedPostRef.path === gridRef.path) {
+                        await updateDoc(doc(db, "Users", userDoc.id), {
+                            LikedPosts: arrayRemove(likedPostRef)
+                        });
+                    }
+                }
+            });
+
             this.isDeleting = false;
-            router.push("/");
+            router.push('/');
         },
         openDeleteModal() {
             this.showDeleteModal = true;
         },
-        async likeGrid() {
+        async toggleLike() {
             const auth = getAuth();
             const currentUserID = auth.currentUser.uid; // get the ID of the currently authenticated user
+            const userRef = doc(db, "Users", currentUserID);
+            const userSnap = await getDoc(userRef);
+            const userData = userSnap.data();
             const gridID = this.$route.params.id;
             const gridRef = doc(db, "Grids", gridID);
-            const gridSnap = await getDoc(gridRef);
-            const gridData = gridSnap.data();
-            const likes = gridData.Likes || [];
+            const likeRef = collection(db, "Likes");
+            const userLikedGrid = userData.LikedPosts.find(ref => ref.path === gridRef.path);
 
-            if (likes.includes(currentUserID)) {
-                // User has already liked the post, so remove their like
+            if (userLikedGrid) {
+                // User has already liked the post, so unlike it
+                const likeCollectionRef = collection(db, "Likes");
+                const likeQuery = query(likeCollectionRef, where("Author", "==", userRef), where("Grid", "==", gridRef));
+                const likeSnapshot = await getDocs(likeQuery);
+                const userLikeRef = likeSnapshot.docs[0] ? doc(db, "Likes", likeSnapshot.docs[0].id) : null;
+                await deleteDoc(userLikeRef);
+                await updateDoc(userRef, {
+                    LikedPosts: arrayRemove(userLikedGrid)
+                });
                 await updateDoc(gridRef, {
-                    Likes: arrayRemove(currentUserID)
+                    Likes: arrayRemove(userLikeRef)
                 });
                 this.likes--;
             } else {
-                // User has not liked the post, so add their like
-                // Create a new like document
-                const newLikeRef = await addDoc(collection(db, "Likes"), {
-                    Author: doc(db, "Users", currentUserID),
+                // User hasn't liked the post, so like it
+                const newLikeRef = await addDoc(likeRef, {
+                    Author: userRef,
                     Date: serverTimestamp(),
                     Grid: gridRef
                 });
-
-                // Add the new like to the grid's Likes array
+                await updateDoc(userRef, {
+                    LikedPosts: arrayUnion(gridRef)
+                });
                 await updateDoc(gridRef, {
                     Likes: arrayUnion(newLikeRef)
                 });
                 this.likes++;
             }
+        },
+        async toggleReport() {
+            const gridID = this.$route.params.id;
+            const gridRef = doc(db, "Grids", gridID);
+            const auth = getAuth();
+            const user = auth.currentUser;
+            if (this.isReported) {
+                // If the post is already reported, unreport it
+                await updateDoc(gridRef, {
+                    isReported: arrayRemove(`/Users/${user.uid}`),
+                });
+            } else {
+                // If the post is not reported, report it
+                await updateDoc(gridRef, {
+                    isReported: arrayUnion(`/Users/${user.uid}`),
+                });
+            }
+            // Toggle the isReported state
+            this.isReported = !this.isReported;
         }
     },
 };
@@ -429,9 +521,20 @@ p+p,
     justify-content: center;
     align-items: center;
 }
+
+.outlined-flag-icon {
+    color: red;
+    height: 30px;
+}
+
+.flag-icon {
+    height: 30px;
+}
+
 .author-id p, .author-id button {
     transition: 0.3s ease;
 }
+
 .author-id p:hover, .author-id button:hover {
     text-decoration: underline;
     font-weight: 300;
