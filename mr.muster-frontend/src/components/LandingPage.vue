@@ -13,14 +13,11 @@
       </div>
       <div class="pic-grid">
         <div class="row">
-          <div
-            class="col"
-            v-for="(column, columnIndex) in columnsPosts()"
-            :key="columnIndex"
-          >
+          <div class="col" v-for="(column, columnIndex) in columnsPosts()" :key="columnIndex">
             <template v-for="post in column" :key="post.id">
-              <img :src="post.postUrl" class="img" @click="navigateToPost()" />
-              <!-- post.id -->
+              <RouterLink :to="`/view-post/${post.id}`">
+                <img :src="post.postUrl" class="img-post" @click="navigateToPost()" />
+              </RouterLink>
             </template>
           </div>
         </div>
@@ -170,7 +167,6 @@ function navigateToHome() {
 }
 
 function navigateToPost() {
-  /* postId */
   router.push("/view-post");
 }
 
@@ -273,15 +269,17 @@ function navigateToCreate() {
   gap: 20px;
 }
 
-.img {
+.img-post {
   width: 100%;
   box-shadow: 1px 1px 1px rgba(0, 0, 0, 0.1);
   border-radius: 10px;
   margin-bottom: 4vh;
+  transition: box-shadow 0.3s ease;
 }
 
-.img:hover {
+.img-post:hover {
   cursor: pointer;
+  box-shadow: -8px 8px 8px rgba(105,16,119, 0.4);
 }
 
 .search-container {

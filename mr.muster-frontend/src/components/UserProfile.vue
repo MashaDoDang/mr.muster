@@ -27,7 +27,7 @@
     <div class="profile-grids container p-3 my-3 mt-5">
       <div class="user-grids grids-container">
         <p>Patterns created by you</p>
-        <div class="pic-grid mt-3">
+        <div class="pic-grid mt-3" v-if="userHasPosts()">
           <div class="row">
             <div
               class="col"
@@ -35,34 +35,23 @@
               :key="columnIndex"
             >
               <template v-for="post in column" :key="post.id">
-                <img :src="post.postUrl" class="img" @click="navigateToPost()" />
+                <RouterLink :to="`/view-post/${post.id}`">
+                  <img :src="post.postUrl" class="img-post"/>
+                </RouterLink>
               </template>
             </div>
           </div>
         </div>
-        <!-- <div class="pic-grid mt-3">
-                  <div class="row" id="row">
-                      <div class="col-lg-4 col-md-12 mb-4 mb-lg-0">
-                          <img src="../assets/mock-img1.jpg" class="w-100 shadow-1-strong rounded mb-4" />
-                          <img src="../assets/mock-img2.jpg" class="w-100 shadow-1-strong rounded mb-4" />
-                      </div>
-                      <div class="col-lg-4 mb-4 mb-lg-0">
-                          <img src="../assets/mock-img3.jpg" class="w-100 shadow-1-strong rounded mb-4" />
-                          <img src="../assets/mock-img4.png" class="w-100 shadow-1-strong rounded mb-4" />
-                      </div>
-                      <div class="col-lg-4 mb-4 mb-lg-0">
-                          <img src="../assets/mock-img5.jpg" class="w-100 shadow-1-strong rounded mb-4" />
-                          <img src="../assets/mock-img6.png" class="w-100 shadow-1-strong rounded mb-4" />
-                      </div>
-                  </div>
-              </div> -->
+        <div v-else>
+          <p>You haven't created any patterns yet.</p>
+        </div>
       </div>
   
       <div class="vr"></div>
   
       <div class="liked-grids grids-container">
         <p>Your Favourites</p>
-        <div class="pic-grid mt-3">
+        <div class="pic-grid mt-3" v-if="userLikedPosts()">
           <div class="row">
             <div
               class="col"
@@ -70,24 +59,15 @@
               :key="columnIndex"
             >
               <template v-for="post in column" :key="post.id">
-                <img :src="post.postUrl" class="img" @click="navigateToPost()" />
+                <RouterLink :to="`/view-post/${post.id}`">
+                  <img :src="post.postUrl" class="img-post"/>
+                </RouterLink>
               </template>
             </div>
           </div>
-          <!-- <div class="row" id="row">
-                      <div class="col-lg-4 col-md-12 mb-2 mb-lg-0">
-                          <img src="../assets/mock-img1.jpg" class="w-100 shadow-1-strong rounded mb-2" />
-                          <img src="../assets/mock-img2.jpg" class="w-100 shadow-1-strong rounded mb-2" />
-                      </div>
-                      <div class="col-lg-4 mb-2 mb-lg-0">
-                          <img src="../assets/mock-img3.jpg" class="w-100 shadow-1-strong rounded mb-2" />
-                          <img src="../assets/mock-img4.png" class="w-100 shadow-1-strong rounded mb-2" />
-                      </div>
-                      <div class="col-lg-4 mb-2 mb-lg-0">
-                          <img src="../assets/mock-img5.jpg" class="w-100 shadow-1-strong rounded mb-2" />
-                          <img src="../assets/mock-img6.png" class="w-100 shadow-1-strong rounded mb-2" />
-                      </div>
-                  </div> -->
+        </div>
+        <div v-else>
+            <p>You haven't liked any patterns yet.</p>
         </div>
       </div>
     </div>
@@ -108,8 +88,6 @@
   const userIcon = ref("");
   const userGrids = ref([]);
   const likedGrids = ref([]);
-
-  console.log(route.params.id);
 
   userProfileID.value = route.params.id;
   
@@ -164,7 +142,17 @@
     });
     return result;
   };
+
   getUserInfo(userProfileID.value);
+
+  function userHasPosts() {
+    return userGrids.value.length > 0;
+  }
+
+  function userLikedPosts() {
+    return likedGrids.value.length > 0;
+  }
+
   </script>
   
   <style scoped>
@@ -243,5 +231,15 @@
   }
   .vr {
     border: 2px solid;
+  }
+  .img-post {
+    max-width: 100%;
+    border-radius: 10px;
+    margin: 1vh 0;
+    transition: box-shadow 0.3s ease;
+  }
+  .img-post:hover {
+    cursor: pointer;
+    box-shadow: -8px 8px 8px rgba(105,16,119, 0.4);
   }
   </style>
