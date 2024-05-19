@@ -4,10 +4,6 @@
             href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,200,0,0" />
     </head>
     <div class="post-container container">
-        <div class="pic-arrow" style="margin-right: 20px;">
-            <a href="#" class="material-symbols-outlined arrow">arrow_back</a>
-
-        </div>
         <div class="comment-section">
             <img :src="content" style="height: 60%; max-height: 65vh; object-fit: contain;">
             <div class="top-comment-section">
