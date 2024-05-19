@@ -23,6 +23,7 @@
         </button>
       </div>
       <div class="buttons-container" style="gap: 20px" v-else>
+        <button class="btn log-button" v-if="isAdmin" @click="goToAdminPage">Admin Page</button>
         <div class="user-container">
           <RouterLink :to="`/user-profile/${userID}`">
             <button class="button-image">
@@ -75,6 +76,7 @@ import { db } from "../firebase";
 
 const router = useRouter();
 const userState = ref(false);
+const isAdmin = ref(false);
 const openLogin = ref(false);
 const registerModeRef = ref(false);
 const userID =  ref("");
@@ -99,10 +101,11 @@ onAuthStateChanged(auth, async (user) => {
   userState.value = !!user; // shorthand to convert truthy/falsy to boolean
   if (user) {  
     userID.value = auth.currentUser.uid; 
-  
+    await checkIfAdmin();
     await getUserIcon();
   } else {
     userState.value = false;
+    isAdmin.value = false;
   }
 
 });
@@ -132,6 +135,19 @@ function saveInput() {
   localStorage.setItem("searchInput", searchInput.value);
   router.push({ name: "LandingPage", query: { search: searchInput.value, criteria: searchCriteria.value } });
   searchInput.value = "";
+}
+
+async function checkIfAdmin() {
+  const userRef = doc(db, "Users", userID.value);
+  const userSnap = await getDoc(userRef);
+  const userData = userSnap.data();
+  if (userData) {
+    isAdmin.value = userData.isAdmin;
+  }
+}
+
+function goToAdminPage() {
+  router.push("/admin-page");
 }
 </script>
 
@@ -217,8 +233,9 @@ nav {
   background-color: #d95b00;
   border-color: #d95b00;
   color: white;
-  width: 110px;
+  min-width: 110px;
 }
+
 .sign-button {
   border-color: #fbc46a;
   color: #fbc46a;
