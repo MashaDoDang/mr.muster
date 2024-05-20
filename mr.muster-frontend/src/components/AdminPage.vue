@@ -1,7 +1,11 @@
 <template>
     <div class="container">
         <h1>Analytics</h1>
-
+        <div class="charts">
+            <canvas id="gridsChart" width="400" height="200"></canvas>
+            <canvas id="likesChart" width="400" height="200"></canvas>
+            <canvas id="commentsChart" width="400" height="200"></canvas>
+        </div>
         <hr>
         <h1>Reported Posts</h1>
         <div class="row">
@@ -42,9 +46,10 @@
 </template>
 
 <script setup>
-import { ref, onBeforeMount } from "vue";
-import { collection, getDocs, getDoc, doc, updateDoc, deleteDoc } from "firebase/firestore";
+import { ref, onMounted, nextTick } from "vue";
+import { collection, getDocs, getDoc, doc, updateDoc, deleteDoc, query, orderBy } from "firebase/firestore";
 import { db } from "../firebase";
+import Chart from "chart.js/auto";
 
 const posts = ref([]);
 const comments = ref([]);
@@ -74,7 +79,7 @@ async function getPosts() {
 async function clearReports(post) {
     const postRef = doc(db, "Grids", post.id);
     await updateDoc(postRef, { isReported: [] });
-    posts.value = posts.value.filter(p => p.id !== post.id);
+    posts.value = posts.value.filter((p) => p.id !== post.id);
 }
 
 async function getComments() {
@@ -102,12 +107,12 @@ async function getComments() {
 async function clearCommentReports(comment) {
     const commentRef = doc(db, "Comments", comment.id);
     await updateDoc(commentRef, { isReported: [] });
-    comments.value = comments.value.filter(c => c.id !== comment.id);
+    comments.value = comments.value.filter((c) => c.id !== comment.id);
 }
 
 async function deleteComment(comment) {
     if (!comment || !comment.id || !comment.grid) {
-        console.error('Invalid comment:', comment);
+        console.error("Invalid comment:", comment);
         return;
     }
     const commentRef = doc(db, "Comments", comment.id);
@@ -116,15 +121,162 @@ async function deleteComment(comment) {
     const gridDoc = await getDoc(gridRef);
     const gridData = gridDoc.data();
     // Remove the comment reference from the Comments array in the Grid document
-    const gridComments = gridData.Comments.filter(c => c.path !== commentRef.path);
+    const gridComments = gridData.Comments.filter((c) => c.path !== commentRef.path);
     await updateDoc(gridRef, { Comments: gridComments });
     await deleteDoc(commentRef);
-    comments.value = comments.value.filter(c => c.id !== comment.id);
+    comments.value = comments.value.filter((c) => c.id !== comment.id);
 }
 
-onBeforeMount(() => {
+async function fetchData(collectionName, dateField) {
+    const q = query(collection(db, collectionName), orderBy(dateField));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({
+        ...doc.data(),
+        [dateField]: doc.data()[dateField].toDate().toLocaleDateString()
+    }));
+}
+
+function aggregateDataByDate(data, dateField) {
+    return data.reduce((acc, doc) => {
+        const date = doc[dateField];
+        if (!acc[date]) {
+            acc[date] = 0;
+        }
+        acc[date]++;
+        return acc;
+    }, {});
+}
+
+async function createCharts() {
+    const gridsData = await fetchData('Grids', 'PostedDate');
+    const likesData = await fetchData('Likes', 'Date');
+    const commentsData = await fetchData('Comments', 'Date');
+
+    const aggregatedGrids = aggregateDataByDate(gridsData, 'PostedDate');
+    const aggregatedLikes = aggregateDataByDate(likesData, 'Date');
+    const aggregatedComments = aggregateDataByDate(commentsData, 'Date');
+
+    const gridDates = Object.keys(aggregatedGrids);
+    const gridCounts = Object.values(aggregatedGrids);
+
+    const likeDates = Object.keys(aggregatedLikes);
+    const likeCounts = Object.values(aggregatedLikes);
+
+    const commentDates = Object.keys(aggregatedComments);
+    const commentCounts = Object.values(aggregatedComments);
+
+    const ctx1 = document.getElementById("gridsChart").getContext("2d");
+    new Chart(ctx1, {
+        type: "line",
+        data: {
+            labels: gridDates,
+            datasets: [
+                {
+                    label: "Grids",
+                    data: gridCounts,
+                    borderColor: "rgba(75, 192, 192, 1)",
+                    backgroundColor: "rgba(75, 192, 192, 0.2)",
+                    fill: false,
+                    tension: 0.1,
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                tooltip: {
+                    mode: "index",
+                    intersect: false,
+                },
+                title: {
+                    display: true,
+                    text: "Number of Grids Created Over Time",
+                },
+            },
+            hover: {
+                mode: "nearest",
+                intersect: true,
+            },
+        },
+    });
+
+    const ctx2 = document.getElementById("likesChart").getContext("2d");
+    new Chart(ctx2, {
+        type: "line",
+        data: {
+            labels: likeDates,
+            datasets: [
+                {
+                    label: "Likes",
+                    data: likeCounts,
+                    borderColor: "rgba(153, 102, 255, 1)",
+                    backgroundColor: "rgba(153, 102, 255, 0.2)",
+                    fill: false,
+                    tension: 0.1,
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                tooltip: {
+                    mode: "index",
+                    intersect: false,
+                },
+                title: {
+                    display: true,
+                    text: "Number of Likes Over Time",
+                },
+            },
+            hover: {
+                mode: "nearest",
+                intersect: true,
+            },
+        },
+    });
+
+    const ctx3 = document.getElementById("commentsChart").getContext("2d");
+    new Chart(ctx3, {
+        type: "line",
+        data: {
+            labels: commentDates,
+            datasets: [
+                {
+                    label: "Comments",
+                    data: commentCounts,
+                    borderColor: "rgba(255, 159, 64, 1)",
+                    backgroundColor: "rgba(255, 159, 64, 0.2)",
+                    fill: false,
+                    tension: 0.1,
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                tooltip: {
+                    mode: "index",
+                    intersect: false,
+                },
+                title: {
+                    display: true,
+                    text: "Number of Comments Over Time",
+                },
+            },
+            hover: {
+                mode: "nearest",
+                intersect: true,
+            },
+        },
+    });
+}
+
+onMounted(() => {
     getPosts();
     getComments();
+    nextTick(() => {
+        createCharts();
+    });
 });
 </script>
 
@@ -138,7 +290,6 @@ onBeforeMount(() => {
 
 .col {
     flex: 1 0 21%;
-    /* 5 items per row */
     margin: 1%;
 }
 
@@ -148,7 +299,6 @@ onBeforeMount(() => {
     padding: 10px;
     text-align: center;
     color: rgb(0, 0, 0);
-    /* or any color you want */
     background-color: rgb(255, 255, 255);
     display: flex;
     width: 85vw;
@@ -193,4 +343,11 @@ hr {
     font-weight: 500;
     margin: 10px 0;
 }
+
+/* .charts {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+    max-width: 100%;
+} */
 </style>

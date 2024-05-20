@@ -1,4 +1,5 @@
 <template>
+
     <head>
         <link rel="stylesheet"
             href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,200,0,0" />
@@ -16,7 +17,8 @@
                             class="material-symbols-outlined edit-icon">edit</button>
                         <button @click="openDeleteModal" v-if="!editMode && (isAuthor || isAdmin)"
                             class="material-symbols-outlined trash-icon" style="height: 30px;">delete</button>
-                        <button @click="toggleReport" v-if="!editMode && !isAuthor && isLoggedIn" class="material-symbols-outlined">
+                        <button @click="toggleReport" v-if="!editMode && !isAuthor && isLoggedIn"
+                            class="material-symbols-outlined">
                             {{ isReported ? 'report_off' : 'report' }}
                         </button>
                         <div v-if="!editMode && (isAuthor || isAdmin)" class="visibility-dropdown">
@@ -28,9 +30,12 @@
                     </div>
                     <div class="name-bot-com-section" style="display: flex; justify-content: flex-start; gap: 30px;">
                         <p>{{ commentsAmount }} comments</p>
-                        <div style="display: flex;">
+                        <div style="display: flex; gap: 5px; ">
                             <p> {{ likes }}</p>
-                            <button class="material-symbols-outlined like-icon" @click="toggleLike">favorite</button>
+                            <button class="material-symbols-outlined like-icon" @click="toggleLike">
+                                <img :src="isLiked ? favoriteIcon : favoriteBorderIcon" alt="like-icon"
+                                    style="height: 27px; margin-bottom: 3px;">
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -51,9 +56,9 @@
             <div class="comment-box">
                 <p v-if="!renderComments().length" style="margin-top: 40px;">Be the first to leave a comment!</p>
                 <Comment v-for="item in renderComments()" :key="item.comment.id" :comment="item.comment" :user="item"
-                    :userID="item.userID" :username="item.username" :userIcon="item.userIcon" :commentRef="item.commentRef"
-                    @commentDeleted="handleCommentDeleted" @removeCommentFromState="removeCommentFromState"
-                    @commentUpdated="handleCommentUpdated" />
+                    :userID="item.userID" :username="item.username" :userIcon="item.userIcon"
+                    :commentRef="item.commentRef" @commentDeleted="handleCommentDeleted"
+                    @removeCommentFromState="removeCommentFromState" @commentUpdated="handleCommentUpdated" />
             </div>
 
         </div>
@@ -73,6 +78,8 @@ import { onAuthStateChanged } from "firebase/auth";
 import DeleteModal from "./DeleteModal.vue";
 import router from "@/router";
 import MusterOverlay from './MusterOverlay.vue';
+import favoriteBorderIcon from '@/assets/favorite_border_40dp.svg';
+import favoriteIcon from '@/assets/favorite_40dp.svg';
 
 export default {
     name: "view-post",
@@ -83,6 +90,8 @@ export default {
     },
     data() {
         return {
+            favoriteBorderIcon,
+            favoriteIcon,
             title: "",
             likes: 0,
             commentsAmount: 0,
@@ -105,6 +114,7 @@ export default {
             isReported: false,
             reports: [],
             isLoggedIn: false,
+            isLiked: false,
         };
     },
     async created() {
@@ -119,12 +129,20 @@ export default {
                 // Calculate isReported
                 this.isReported = this.reports.includes(`/Users/${user.uid}`);
                 this.isLoggedIn = true;
+
+                const currentUserID = auth.currentUser.uid; // get the ID of the currently authenticated user
+                const userRef = doc(db, "Users", currentUserID);
+                const userSnap = await getDoc(userRef);
+                const userData = userSnap.data();
+                const gridRef = doc(db, "Grids", this.$route.params.id);
+                this.isLiked = userData.LikedPosts.find(ref => ref.path === gridRef.path);
             } else {
                 // User is signed out, set isAuthor and isReported to false
                 this.isAuthor = false;
                 this.isReported = false;
                 this.isLoggedIn = false;
                 this.isAdmin = false;
+                this.isLiked = false;
             }
         });
     },
@@ -353,6 +371,7 @@ export default {
                 await updateDoc(gridRef, {
                     Likes: arrayRemove(userLikeRef)
                 });
+                this.isLiked = false;
                 this.likes--;
             } else {
                 // User hasn't liked the post, so like it
@@ -367,6 +386,7 @@ export default {
                 await updateDoc(gridRef, {
                     Likes: arrayUnion(newLikeRef)
                 });
+                this.isLiked = true;
                 this.likes++;
             }
         },
@@ -527,11 +547,13 @@ p+p,
     height: 30px;
 }
 
-.author-id p, .author-id button {
+.author-id p,
+.author-id button {
     transition: 0.3s ease;
 }
 
-.author-id p:hover, .author-id button:hover {
+.author-id p:hover,
+.author-id button:hover {
     text-decoration: underline;
     font-weight: 300;
 }
