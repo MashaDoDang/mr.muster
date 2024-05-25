@@ -42,10 +42,9 @@
               :key="columnIndex"
             >
               <template v-for="post in column" :key="post.id">
-                <img
-                  :src="post.postUrl"
-                  class="img"
-                />
+                <RouterLink :to="`/view-post/${post.id}`">
+                  <img :src="post.postUrl" class="img-post"/>
+                </RouterLink>
               </template>
             </div>
           </div>
