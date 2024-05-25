@@ -8,6 +8,7 @@ import ViewPost from '@/components/ViewPost.vue';
 import UserProfile from '@/components/UserProfile.vue';
 import CreateGrid from '@/components/CreateGrid.vue';
 import AdminPage from '@/components/AdminPage.vue';
+import NotFound from '@/components/NotFound.vue';
 
 const routes = [
   { path: '/', name: 'LandingPage', component: LandingPage },
@@ -18,6 +19,7 @@ const routes = [
   { path: '/user-profile/:id', name: 'UserProfile', component: UserProfile },
   { path: '/create', name: 'CreatePost', component: CreateGrid },
   { path: '/admin-page', name: 'AdminPage', component: AdminPage, meta: { requiresAdmin: true } }, // add meta property
+  { path: '/:pathName(.*)', name: 'NotFound', component: NotFound },
 ];
 
 const router = createRouter({
