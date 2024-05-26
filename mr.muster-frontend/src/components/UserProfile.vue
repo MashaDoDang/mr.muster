@@ -7,20 +7,15 @@
         </button>
       </div>
       <div class="stat-container">
-        <div class="stat">
-          <p>{{ follows }}</p>
-          <hr />
-          <p>Following</p>
-        </div>
-        <div class="stat">
-          <p>{{ followedBy }}</p>
-          <hr />
-          <p>Followed</p>
-        </div>
-        <div class="stat">
+        <div class="stat"> 
           <p>{{ likes }}</p>
           <hr />
           <p>Likes</p>
+        </div>
+        <div class="stat"> 
+          <p>{{ comments }}</p>
+          <hr />
+          <p>Comments</p>
         </div>
       </div>
     </div>
@@ -81,14 +76,13 @@
   import { useRoute } from "vue-router";
   import { doc, getDoc } from "firebase/firestore";
   import { db } from "../firebase";
-  import { ref } from "vue";
+  import { ref, watch, onMounted } from "vue";
   import { getAuth, onAuthStateChanged } from "firebase/auth";
 
   const route = useRoute();
   const userProfileID = ref('');
-  const followedBy = ref(0);
-  const follows = ref(0);
   const likes = ref(0);
+  const comments = ref(0);
   const name = ref("");
   const userIcon = ref("");
   const userGrids = ref([]);
@@ -102,9 +96,6 @@
     const userSnap = await getDoc(userRef);
     const userData = userSnap.data();
     if (userData) {
-      followedBy.value = userData.FollowedBy.length;
-      follows.value = userData.Follows.length;
-      likes.value = userData.LikedPosts.length;
       name.value = userData.Username;
       userIcon.value = userData.Icon;
       if (userData.OwnedGrids) {
@@ -114,6 +105,7 @@
           if (!isLoggedUserProfile.value && gridInfo.IsPrivate) {
             continue;
           }
+          comments.value += gridInfo.Comments.length;
           userGrids.value.push(gridInfo);
         }
       }
@@ -125,6 +117,7 @@
             continue;
           }
           likedGrids.value.push(gridInfo);
+          likes.value += gridInfo.Likes.length;
         }
       }
     }
@@ -139,9 +132,18 @@
         id: gridId,
         postUrl: gridData.Content,
         IsPrivate: gridData.IsPrivate,
+        Comments: gridData.Comments,
+        Likes: gridData.Likes,
       };
     }
   };
+
+  watch(
+    () => route.params.id,
+    () => {
+      window.location.reload();
+    }
+); 
   
   const columns = (grids) => {
     const columnCount = 3;
@@ -155,8 +157,9 @@
     });
     return result;
   };
-
-  getUserInfo(userProfileID.value);
+  onMounted(async () => {
+    await getUserInfo(userProfileID.value);
+  });
 
   function userHasPosts() {
     return userGrids.value.length > 0;

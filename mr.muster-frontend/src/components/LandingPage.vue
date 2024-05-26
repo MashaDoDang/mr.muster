@@ -42,10 +42,9 @@
               :key="columnIndex"
             >
               <template v-for="post in column" :key="post.id">
-                <img
-                  :src="post.postUrl"
-                  class="img"
-                />
+                <RouterLink :to="`/view-post/${post.id}`">
+                  <img :src="post.postUrl" class="img-post"/>
+                </RouterLink>
               </template>
             </div>
           </div>
@@ -282,7 +281,18 @@ function navigateToCreate() {
 }
 
 .go-back-button {
+  color: black;
+  box-shadow: inset 0 0 0 0 #324355;
+  margin: 5vh 5vw -.25rem;
+  padding: 0 .25rem;
+  transition: color .3s ease-in-out, box-shadow .3s ease-in-out;
+  text-decoration: underline;
   font-size: 1.3em;
+}
+
+.go-back-button:hover {
+  box-shadow: inset 320px 0 0 0 #324355;
+  color: white;
 }
 
 .search-result-container {
