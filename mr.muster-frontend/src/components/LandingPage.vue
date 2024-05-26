@@ -283,7 +283,7 @@ function navigateToCreate() {
 .go-back-button {
   color: black;
   box-shadow: inset 0 0 0 0 #324355;
-  margin: 0 -.25rem;
+  margin: 5vh 5vw -.25rem;
   padding: 0 .25rem;
   transition: color .3s ease-in-out, box-shadow .3s ease-in-out;
   text-decoration: underline;

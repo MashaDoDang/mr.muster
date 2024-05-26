@@ -36,7 +36,7 @@
       <slot></slot>
     </div>
     <div class="search-bar" id="search-bar">
-      <span v-on:click="saveInput()" class="material-symbols-outlined"
+      <span v-on:click="saveInput()" class="material-symbols-outlined search-button" 
         >search</span
       >
       <input
@@ -46,6 +46,7 @@
         @keydown.enter="saveInput()"
         placeholder="Search the grid..."
       />
+      <span v-if="searchInput" @click="clearSearch" class="material-symbols-outlined close-button">close</span>
       <select
         class="form-select"
         id="select-search"
@@ -58,6 +59,7 @@
     </div>
   </nav>
   <LoginModal
+    class="modal"
     v-if="openLogin"
     :registerMode="registerModeRef"
     @close="closeModal"
@@ -119,6 +121,10 @@ async function getUserIcon() {
   }
 }
 
+function clearSearch() {
+  searchInput.value = "";
+}
+
 function closeModal() {
   openLogin.value = false;
 }
@@ -134,7 +140,6 @@ function saveChoice() {
 function saveInput() {
   localStorage.setItem("searchInput", searchInput.value);
   router.push({ name: "LandingPage", query: { search: searchInput.value, criteria: searchCriteria.value } });
-  searchInput.value = "";
 }
 
 async function checkIfAdmin() {
@@ -198,6 +203,11 @@ nav {
 .search-bar:focus-within {
   box-shadow: 0 0 2px rgba(0, 0, 0, 0.75);
 }
+.close-button, .search-button {
+  margin:0 15px;
+  cursor: pointer;
+}
+
 .search-input {
   font-size: 16px;
   font-family: "Lexend", sans-serif;
@@ -289,5 +299,9 @@ button {
 #select-search:focus {
   outline: none;
   box-shadow: 0 0 0 0.2rem rgba(105, 16, 119, 0.5);
+}
+.modal {
+  position: fixed;
+  z-index: 100;
 }
 </style>
