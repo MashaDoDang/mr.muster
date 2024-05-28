@@ -12,8 +12,8 @@
                     <p>{{ date }}</p>
                     <div v-if="isCurrentUserAuthor || isCurrentUserAdmin" class="comment-icons"
                         style="display: flex; gap: 10px; align-items: center; margin-right: 10px;">
-                        <i class="fas fa-edit" @click="startEditComment"></i>
-                        <i class="fas fa-trash-alt" @click="deleteComment"></i>
+                        <i style="cursor: pointer;" class="fas fa-edit" @click="startEditComment"></i>
+                        <i style="cursor: pointer;" class="fas fa-trash-alt" @click="deleteComment"></i>
                     </div>
                     <button @click="toggleReport" v-if="!isEditing && !isCurrentUserAuthor && isLoggedIn"
                         class="material-symbols-outlined">
@@ -182,10 +182,12 @@ export default {
     height: 20px;
     cursor: pointer;
 }
+
 .username-comment {
     text-decoration: none;
-    color:black;
+    color: black;
 }
+
 .username-comment:hover {
     text-decoration: underline;
     font-weight: 300;
