@@ -1,6 +1,20 @@
 # Mr.Muster
 
+# RUNNING CYPRESS AND FIREBASE EMULATORS
 
+since we have new dependiencies be sure to run:
+    npm install 
+in the mr.muster (root) directory
+
+in order to run cypress:
+    npm run test:e2e
+
+in order to run firebase emulators:
+    firebase emulators:start
+
+If you would like to navigate to UI of the emulators, then go to
+    http://localhost:4000/
+in your browser after starting the emulators
 
 ## Getting started
 
