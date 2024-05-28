@@ -1,46 +1,58 @@
 <template>
     <div class="container">
-        <h1>Analytics</h1>
-        <div class="charts">
-            <canvas id="gridsChart" width="400" height="200"></canvas>
-            <canvas id="likesChart" width="400" height="200"></canvas>
-            <canvas id="commentsChart" width="400" height="200"></canvas>
+        <div style="display: flex; justify-content: center; gap: 20px; margin-bottom: 5vh;">
+            <button class="btn log-button" @click="activeTab = 'Analytics'">Analytics</button>
+            <button class="btn log-button" @click="activeTab = 'Reported Posts'">Reported Posts</button>
+            <button class="btn log-button" @click="activeTab = 'Reported Comments'">Reported Comments</button>
         </div>
-        <hr>
-        <h1>Reported Posts</h1>
-        <div class="row">
-            <div class="col" v-for="(post, postIndex) in posts" :key="postIndex">
-                <router-link style="text-decoration: none; color: inherit;" :to="`/view-post/${post.id}`">
-                    <div class="post-card">
-                        <img :src="post.postUrl" class="img-post" />
-                        <div class="post-info">
-                            <h2 v-if="post.title">{{ post.title }}</h2>
-                            <span>Author: {{ post.author }}</span>
-                            <span>{{ post.postedDate }}</span>
-                            <span>Reports: {{ post.reports.length }}</span>
-                            <button @click.stop="clearReports(post)">Clear Reports</button>
-                        </div>
-                    </div>
-                </router-link>
+        <div v-show="activeTab === 'Analytics'">
+            <h1>Analytics</h1>
+            <div class="charts">
+                <canvas id="gridsChart" width="400" height="200"></canvas>
+                <canvas id="likesChart" width="400" height="200"></canvas>
+                <canvas id="commentsChart" width="400" height="200"></canvas>
             </div>
+            <hr>
         </div>
-        <hr>
-        <h1>Reported Comments</h1>
-        <div class="col" v-for="(comment, commentIndex) in comments" :key="commentIndex">
-            <div class="comment-card">
-                <div class="comment-info">
-                    <div class="comment-details">
-                        <span>Author: {{ comment.author }}</span>
-                        <span>{{ comment.postedDate }}</span>
-                        <span>Reports: {{ comment.reports.length }}</span>
-                        <button @click.stop="clearCommentReports(comment)">Clear Reports</button>
-                        <button @click.stop="deleteComment(comment)">Delete Comment</button>
-                    </div>
-                    <div class="comment-content">
-                        <span>Content: {{ comment.content }}</span>
+        <div v-show="activeTab === 'Reported Posts'">
+            <h1>Reported Posts</h1>
+            <div class="row">
+                <div class="col" v-for="(post, postIndex) in posts" :key="postIndex">
+                    <router-link style="text-decoration: none; color: inherit;" :to="`/view-post/${post.id}`">
+                        <div class="post-card">
+                            <img :src="post.postUrl" class="img-post" />
+                            <div class="post-info">
+                                <h2 v-if="post.title">{{ post.title }}</h2>
+                                <span>Author: {{ post.author }}</span>
+                                <span>{{ post.postedDate }}</span>
+                                <span>Reports: {{ post.reports.length }}</span>
+                                <button @click.stop="clearReports(post)">Clear Reports</button>
+                            </div>
+                        </div>
+                    </router-link>
+                </div>
+            </div>
+            <hr>
+        </div>
+        <div v-show="activeTab === 'Reported Comments'">
+            <h1 style="margin-bottom: 50px;">Reported Comments</h1>
+            <div class="col" v-for="(comment, commentIndex) in comments" :key="commentIndex">
+                <div class="comment-card" style="margin-bottom: 10vh;">
+                    <div class="comment-info">
+                        <div class="comment-details">
+                            <span>Author: {{ comment.author }}</span>
+                            <span>{{ comment.postedDate }}</span>
+                            <span>Reports: {{ comment.reports.length }}</span>
+                            <button @click.stop="clearCommentReports(comment)">Clear Reports</button>
+                            <button @click.stop="deleteComment(comment)">Delete Comment</button>
+                        </div>
+                        <div class="comment-content">
+                            <span>Content: {{ comment.content }}</span>
+                        </div>
                     </div>
                 </div>
             </div>
+            <hr>
         </div>
     </div>
 </template>
@@ -53,6 +65,7 @@ import Chart from "chart.js/auto";
 
 const posts = ref([]);
 const comments = ref([]);
+let activeTab = ref('Analytics');
 
 async function getPosts() {
     const querySnapshot = await getDocs(collection(db, "Grids"));
@@ -342,6 +355,23 @@ hr {
     white-space: pre-wrap;
     font-weight: 500;
     margin: 10px 0;
+}
+
+.btn {
+    font-size: 16px;
+    border-radius: 40px;
+}
+
+.btn:hover {
+    background-color: #f5bc6c;
+    border-color: #f5bc6c;
+}
+
+.log-button {
+    background-color: #d95b00;
+    border-color: #d95b00;
+    color: white;
+    min-width: 110px;
 }
 
 /* .charts {

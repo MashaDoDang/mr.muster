@@ -22,7 +22,8 @@
                             {{ isReported ? 'report_off' : 'report' }}
                         </button>
                         <div v-if="!editMode && (isAuthor || isAdmin)" class="visibility-dropdown">
-                            <select v-model="isPrivate" @change="toggleVisibility">
+                            <select v-model="isPrivate" @change="toggleVisibility" class="form-select"
+                                id="select-search">
                                 <option value="false">Public</option>
                                 <option value="true">Private</option>
                             </select>
@@ -556,5 +557,20 @@ p+p,
 .author-id button:hover {
     text-decoration: underline;
     font-weight: 300;
+}
+
+
+#select-search {
+    font-family: "Lexend", sans-serif;
+    font-size: 16px;
+    height: 100%;
+    margin: 0;
+    width: 10vw;
+    min-width: 100px;
+}
+
+#select-search:focus {
+    outline: none;
+    box-shadow: 0 0 0 0.2rem rgba(105, 16, 119, 0.5);
 }
 </style>
