@@ -11,20 +11,20 @@
         <div class="register-form">
           <input type="text" class="form-control mb-3" placeholder="Username" v-model="username"
             v-if="registerModeRef" />
-          <input type="email" class="form-control mb-3" placeholder="E-mail" v-model="email" />
-          <input type="password" class="form-control mb-3" placeholder="Password" v-model="password"
+          <input data-cy="email-input" type="email" class="form-control mb-3" placeholder="E-mail" v-model="email" />
+          <input data-cy="password-input" type="password" class="form-control mb-3" placeholder="Password" v-model="password"
             v-if="!resetPasswordRef" />
-          <input type="password" class="form-control mb-3" placeholder="Confirm password" v-model="confirmPassword"
+          <input data-cy="password-input" type="password" class="form-control mb-3" placeholder="Confirm password" v-model="confirmPassword"
             v-if="!resetPasswordRef && registerModeRef" />
         </div>
         <div v-if="!resetPasswordRef && !registerModeRef" style="display: grid">
-          <button class="btn-forgot-passwrd" type="button" @click="resetPasswordRef = true">
+          <button data-cy="forgot-button" class="btn-forgot-passwrd" type="button" @click="resetPasswordRef = true">
             Forgot Password?
           </button>
-          <button class="btn btn-primary btn-orange mb-3" type="button" @click="handleLogin">
+          <button data-cy="confirm-login" class="btn btn-primary btn-orange mb-3" type="button" @click="handleLogin">
             Log in
           </button>
-          <button class="btn btn-primary btn-yellow mb-3" type="button" @click="registerModeRef = true">
+          <button data-cy="create-new-button" class="btn btn-primary btn-yellow mb-3" type="button" @click="registerModeRef = true">
             Create a new account
           </button>
           <div class="separator my-3"></div>
@@ -37,14 +37,14 @@
         </div>
       </form>
       <div style="display: flex; justify-content: space-evenly; gap: 5px">
-        <button @click="
+        <button data-cy="cancel-button" @click="
         resetPasswordRef = false;
       registerModeRef = false;
       " class="btn btn-primary mb-3 btn-yellow" type="button" style="flex: 1"
           v-if="resetPasswordRef || registerModeRef">
           Cancel
         </button>
-        <button @click="resetPassword()" class="btn btn-primary mb-3 btn-orange" type="button" style="flex: 1"
+        <button data-cy="send-reset-button" @click="resetPassword()" class="btn btn-primary mb-3 btn-orange" type="button" style="flex: 1"
           v-if="resetPasswordRef">
           Send
         </button>

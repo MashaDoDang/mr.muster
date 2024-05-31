@@ -17,7 +17,7 @@
         <RouterLink to="/"><img :src="logo" alt="logo"/></RouterLink>
       </div>
       <div class="buttons-container" v-if="!userState">
-        <button class="btn log-button" @click="openLoginModal()">Log in</button>
+        <button data-cy="login-button" class="btn log-button" @click="openLoginModal()">Log in</button>
         <button class="btn sign-button" @click="openRegisterModal()">
           Get started
         </button>
@@ -25,13 +25,13 @@
       <div class="buttons-container" style="gap: 20px" v-else>
         <button class="btn log-button" v-if="isAdmin" @click="goToAdminPage">Admin Page</button>
         <div class="user-container">
-          <RouterLink :to="`/user-profile/${userID}`">
+          <RouterLink data-cy="user-profile-icon" :to="`/user-profile/${userID}`">
             <button class="button-image">
               <img :src="userIcon" class="image-button" />
             </button>
           </RouterLink>
         </div>
-        <button class="btn sign-button" @click="logout">Log out</button>
+        <button data-cy="logout-button" class="btn sign-button" @click="logout">Log out</button>
       </div>
       <slot></slot>
     </div>
@@ -59,6 +59,7 @@
     </div>
   </nav>
   <LoginModal
+    data-cy="login-modal"
     class="modal"
     v-if="openLogin"
     :registerMode="registerModeRef"
