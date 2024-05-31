@@ -9,12 +9,12 @@
         <p class="modal-header" v-if="resetPasswordRef">Reset Password</p>
         <p class="modal-header" v-if="registerModeRef">Register</p>
         <div class="register-form">
-          <input type="text" class="form-control mb-3" placeholder="Username" v-model="username"
+          <input data-cy="username-input" type="text" class="form-control mb-3" placeholder="Username" v-model="username"
             v-if="registerModeRef" />
           <input data-cy="email-input" type="email" class="form-control mb-3" placeholder="E-mail" v-model="email" />
           <input data-cy="password-input" type="password" class="form-control mb-3" placeholder="Password" v-model="password"
             v-if="!resetPasswordRef" />
-          <input data-cy="password-input" type="password" class="form-control mb-3" placeholder="Confirm password" v-model="confirmPassword"
+          <input data-cy="confirm-password-input" type="password" class="form-control mb-3" placeholder="Confirm password" v-model="confirmPassword"
             v-if="!resetPasswordRef && registerModeRef" />
         </div>
         <div v-if="!resetPasswordRef && !registerModeRef" style="display: grid">
@@ -48,7 +48,7 @@
           v-if="resetPasswordRef">
           Send
         </button>
-        <button @click="registerUser()" class="btn btn-primary mb-3 btn-orange" type="submit" style="flex: 1"
+        <button data-cy="create-account-button" @click="registerUser()" class="btn btn-primary mb-3 btn-orange" type="submit" style="flex: 1"
           v-if="registerModeRef">
           Create Account
         </button>

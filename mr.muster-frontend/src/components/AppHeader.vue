@@ -18,7 +18,7 @@
       </div>
       <div class="buttons-container" v-if="!userState">
         <button data-cy="login-button" class="btn log-button" @click="openLoginModal()">Log in</button>
-        <button class="btn sign-button" @click="openRegisterModal()">
+        <button data-cy="register-button" class="btn sign-button" @click="openRegisterModal()">
           Get started
         </button>
       </div>
@@ -36,17 +36,18 @@
       <slot></slot>
     </div>
     <div class="search-bar" id="search-bar">
-      <span v-on:click="saveInput()" class="material-symbols-outlined search-button" 
+      <span data-cy="search-button" v-on:click="saveInput()" class="material-symbols-outlined search-button" 
         >search</span
       >
       <input
+        data-cy="search-input"
         class="search-input"
         type="search"
         v-model="searchInput"
         @keydown.enter="saveInput()"
         placeholder="Search the grid..."
       />
-      <span v-if="searchInput" @click="clearSearch" class="material-symbols-outlined close-button">close</span>
+      <span data-cy="clear-button" v-if="searchInput" @click="clearSearch" class="material-symbols-outlined close-button">close</span>
       <select
         class="form-select"
         id="select-search"

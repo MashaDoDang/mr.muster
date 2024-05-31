@@ -1,7 +1,7 @@
 const ex_email = 'test2323@gmail.com';
-const new_email = 'tes337653@gmail.com';
 const password = 'password';
 const ex_username = 'test2323';
+const new_email = 'tes337653@gmail.com';
 const new_username = 'test337653';
 
 describe('registration', () => {
