@@ -17,36 +17,37 @@
         <RouterLink to="/"><img :src="logo" alt="logo"/></RouterLink>
       </div>
       <div class="buttons-container" v-if="!userState">
-        <button class="btn log-button" @click="openLoginModal()">Log in</button>
-        <button class="btn sign-button" @click="openRegisterModal()">
+        <button data-cy="login-button" class="btn log-button" @click="openLoginModal()">Log in</button>
+        <button data-cy="register-button" class="btn sign-button" @click="openRegisterModal()">
           Get started
         </button>
       </div>
       <div class="buttons-container" style="gap: 20px" v-else>
         <button class="btn log-button" v-if="isAdmin" @click="goToAdminPage">Admin Page</button>
         <div class="user-container">
-          <RouterLink :to="`/user-profile/${userID}`">
+          <RouterLink data-cy="user-profile-icon" :to="`/user-profile/${userID}`">
             <button class="button-image">
               <img :src="userIcon" class="image-button" />
             </button>
           </RouterLink>
         </div>
-        <button class="btn sign-button" @click="logout">Log out</button>
+        <button data-cy="logout-button" class="btn sign-button" @click="logout">Log out</button>
       </div>
       <slot></slot>
     </div>
     <div class="search-bar" id="search-bar">
-      <span v-on:click="saveInput()" class="material-symbols-outlined search-button" 
+      <span data-cy="search-button" v-on:click="saveInput()" class="material-symbols-outlined search-button" 
         >search</span
       >
       <input
+        data-cy="search-input"
         class="search-input"
         type="search"
         v-model="searchInput"
         @keydown.enter="saveInput()"
         placeholder="Search the grid..."
       />
-      <span v-if="searchInput" @click="clearSearch" class="material-symbols-outlined close-button">close</span>
+      <span data-cy="clear-button" v-if="searchInput" @click="clearSearch" class="material-symbols-outlined close-button">close</span>
       <select
         class="form-select"
         id="select-search"
@@ -59,6 +60,7 @@
     </div>
   </nav>
   <LoginModal
+    data-cy="login-modal"
     class="modal"
     v-if="openLogin"
     :registerMode="registerModeRef"

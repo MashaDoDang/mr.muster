@@ -19,6 +19,7 @@ const routes = [
   { path: '/user-profile/:id', name: 'UserProfile', component: UserProfile },
   { path: '/create', name: 'CreatePost', component: CreateGrid },
   { path: '/admin-page', name: 'AdminPage', component: AdminPage, meta: { requiresAdmin: true } }, // add meta property
+  {path: '/user-profile/:pathName(.*)*', name: 'NotFound', component: NotFound},
   { path: '/:pathName(.*)', name: 'NotFound', component: NotFound },
 ];
 

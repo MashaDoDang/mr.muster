@@ -27,7 +27,7 @@
     <div class="search-result-container" v-else>
       <div v-if="searchResults.length === 0">
         <h2>No results found for "{{ searchInput }}"</h2>
-        <button @click="navigateToHome" class="go-back-button">
+        <button data-cy="back-home-button" @click="navigateToHome" class="go-back-button">
           Back to All Grids
         </button>
       </div>
@@ -42,14 +42,14 @@
               :key="columnIndex"
             >
               <template v-for="post in column" :key="post.id">
-                <RouterLink :to="`/view-post/${post.id}`">
+                <RouterLink :data-cy="`post-link-${post.id}`" :to="`/view-post/${post.id}`">
                   <img :src="post.postUrl" class="img-post"/>
                 </RouterLink>
               </template>
             </div>
           </div>
         </div>
-        <button @click="navigateToHome" class="go-back-button">
+        <button data-cy="back-home-button" @click="navigateToHome" class="go-back-button">
           Back to All Grids
         </button>
       </div>
