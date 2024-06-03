@@ -15,7 +15,7 @@
         <div class="row">
           <div class="col" v-for="(column, columnIndex) in columnsPosts()" :key="columnIndex">
             <template v-for="post in column" :key="post.id">
-              <RouterLink :to="`/view-post/${post.id}`">
+              <RouterLink :data-cy="`post-link-${post.id}`" :to="`/view-post/${post.id}`">
                 <img :src="post.postUrl" class="img-post"/>
               </RouterLink>
             </template>

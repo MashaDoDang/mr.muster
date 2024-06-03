@@ -29,7 +29,7 @@
           </button>
           <div class="separator my-3"></div>
           <div style="display: grid">
-            <button class="btn btn-primary mb-3 btn-google" type="button" @click="signInWithGoogle()">
+            <button data-cy="google-login-button" class="btn btn-primary mb-3 btn-google" type="button" @click="signInWithGoogle()">
               <img src="@/assets/google-icon.webp" alt="Google sign-in" class="google-icon" />
               Sign in with Google
             </button>
@@ -54,7 +54,7 @@
         </button>
       </div>
       <div class="separator my-3" v-if="registerModeRef"></div>
-      <button class="btn btn-primary mb-3 btn-google" type="button" style="width: 100%" @click="signInWithGoogle()"
+      <button data-cy="google-login-button" class="btn btn-primary mb-3 btn-google" type="button" style="width: 100%" @click="signInWithGoogle()"
         v-if="registerModeRef">
         <img src="@/assets/google-icon.webp" alt="Google sign-in" class="google-icon" />
         Sign in with Google
