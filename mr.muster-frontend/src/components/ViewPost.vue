@@ -16,7 +16,7 @@
                         <button @click="toggleEditMode" v-if="!editMode && (isAuthor || isAdmin)"
                             class="material-symbols-outlined edit-icon">edit</button>
                         <button @click="openDeleteModal" v-if="!editMode && (isAuthor || isAdmin)"
-                            class="material-symbols-outlined trash-icon" style="height: 30px;">delete</button>
+                            class="material-symbols-outlined trash-icon" style="height: 30px;" data-cy="delete-grid">delete</button>
                         <button @click="toggleReport" v-if="!editMode && !isAuthor && isLoggedIn"
                             class="material-symbols-outlined">
                             {{ isReported ? 'report_off' : 'report' }}

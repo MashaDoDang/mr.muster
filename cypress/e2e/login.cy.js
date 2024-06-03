@@ -1,9 +1,3 @@
-// import '../support/commands';
-
-// beforeEach(() => {
-//   cy.login('test@gmail.com', 'password');
-// });
-
 const email = 'test@gmail.com';
 const password = 'password';
 

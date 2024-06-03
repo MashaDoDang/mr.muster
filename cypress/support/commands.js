@@ -1,3 +1,5 @@
+import 'cypress-file-upload';
+
 Cypress.Commands.add('login', (email, password) => {
     // Ensure the login button exists and is visible before clicking
     cy.get('[data-cy=login-button]').should('exist').should('be.visible').then(($btn) => {
