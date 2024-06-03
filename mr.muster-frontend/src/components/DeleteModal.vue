@@ -8,7 +8,7 @@
                 <button @click="closeModal()" class="btn btn-primary mb-3 btn-yellow" type="button" style="flex: 1">
                     Cancel
                 </button>
-                <button @click="deleteGrid" class="btn btn-primary mb-3 btn-orange" type="button" style="flex: 1">
+                <button @click="deleteGrid" class="btn btn-primary mb-3 btn-orange" type="button" style="flex: 1" data-cy="delete-grid-confirm">
                     Delete
                 </button>
             </div>

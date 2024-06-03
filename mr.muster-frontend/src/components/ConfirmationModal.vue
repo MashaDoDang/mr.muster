@@ -9,7 +9,7 @@
                     Cancel
                 </button>
                 <button v-if="modalType === 'save'" @click="saveImage" class="btn btn-primary mb-3 btn-orange"
-                    type="button" style="flex: 1">
+                    type="button" style="flex: 1" data-cy="save-modal-button">
                     Save
                 </button>
                 <button v-else @click="publishImage" class="btn btn-primary mb-3 btn-orange" type="button"

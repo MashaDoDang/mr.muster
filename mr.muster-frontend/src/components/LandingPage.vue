@@ -7,7 +7,7 @@
           <p>try your custom size and colors</p>
         </div>
         <div class="upload-container">
-          <button class="btn upload-button" @click="navigateToCreate()">Upload image</button>
+          <button class="btn upload-button" data-cy="upload-image" @click="navigateToCreate()">Upload image</button>
           <a href="#">or paste URL</a>
         </div>
       </div>

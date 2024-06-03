@@ -4,51 +4,54 @@
     <div class="create-container" :class="{ 'dragging': isDragging }" style="padding: 20px;">
       <MusterOverlay :isProcessing="isProcessing" :processingLabel="processingLabel" />
       <MusterOverlay :isProcessing="isUploading" :processingLabel="actionLabel" />
-      <input type="file" ref="fileInput" class="d-none" @change="previewImage" accept="image/*">
+      <input type="file" ref="fileInput" class="d-none" @change="previewImage" accept="image/*" data-cy="file-input">
       <div v-if="!file" class="uploading">
-        <button class="btn log-button" :class="{ 'dragging': isDragging }" @click="triggerFileInput">
+        <button class="btn log-button" :class="{ 'dragging': isDragging }" @click="triggerFileInput"
+          data-cy="upload-button">
           {{ isDragging ? 'Drop Here' : 'Upload Image' }}
         </button>
-        <p class="drop-file">or drop a file</p>
+        <p class="drop-file" data-cy="drop-file-text">or drop a file</p>
       </div>
       <div v-if="file" class="image-preview">
-        <img :src="imageUrl" alt="Preview" class="preview-img">
+        <img :src="imageUrl" alt="Preview" class="preview-img" data-cy="preview-img">
         <div class="image-preview-controls">
-          <button class="btn icon-button remove-button" @click="removeImage" title="Remove Image">
+          <button class="btn icon-button remove-button" @click="removeImage" title="Remove Image"
+            data-cy="remove-image-button">
             <i class="fas fa-times"></i>
           </button>
-          <button class="btn icon-button change-button" @click="triggerFileInput" title="Change Image">
+          <button class="btn icon-button change-button" @click="triggerFileInput" title="Change Image"
+            data-cy="change-image-button">
             <i class="fas fa-sync-alt"></i>
           </button>
-          <ColorCarousel v-if="file && usedColors.length && newGridCreated" :colors="usedColors" />
+          <ColorCarousel data-cy="color-carousel" v-if="file && usedColors.length && newGridCreated" :colors="usedColors" />
         </div>
       </div>
       <div class="details" style="min-width: 550px;">
         <p style="font-family: Lexend, sans-serif; padding-left: 10px;">Specify details</p>
-        <input type="text" class="form-control" placeholder="Name" v-model="gridName">
+        <input type="text" class="form-control" placeholder="Name" v-model="gridName" data-cy="grid-name-input">
         <input type="text" class="form-control" placeholder="No. colors" v-model="noColors"
-          @input="validateInputPositiveInteger">
+          @input="validateInputPositiveInteger" data-cy="no-colors-input">
         <div class="input-group">
           <input type="text" class="form-control" :placeholder="isHorizontal ? 'Blocks in width' : 'Blocks in height'"
-            v-model="noBlocks" @input="validateInputPositiveInteger">
+            v-model="noBlocks" @input="validateInputPositiveInteger" data-cy="no-blocks-input">
           <div class="input-group-append" style="margin-left: 50px;">
             <v-btn-toggle v-model="isHorizontal" color="deep-purple-accent-3" rounded="0" group mandatory
               style="width: 280px;">
-              <v-btn :value='true' style="width: 50%;">Horizontal</v-btn>
-              <v-btn :value='false' style="width: 50%;">Vertical</v-btn>
+              <v-btn :value='true' style="width: 50%;" data-cy="horizontal-toggle">Horizontal</v-btn>
+              <v-btn :value='false' style="width: 50%;" data-cy="vertical-toggle">Vertical</v-btn>
             </v-btn-toggle>
           </div>
         </div>
         <input type="text" class="form-control" placeholder="Scale factor" v-model="scaleFactor"
-          @input="validateInputPositiveNumber">
+          @input="validateInputPositiveNumber" data-cy="scale-factor-input">
         <div style="display: flex; align-items: center; width: 100%; justify-content: space-between">
           <input v-if="isGrid" type="text" class="form-control" placeholder="Thick line frequency"
             v-model="thickLineFrequency" @input="validateInputPositiveInteger"
-            style="margin-bottom: 0px; width: 220px; padding: 6px 12px;">
-          <span v-else style="margin-left: 12px">Generate with grid</span>
+            style="margin-bottom: 0px; width: 220px; padding: 6px 12px;" data-cy="thick-line-frequency-input">
+          <span v-else style="margin-left: 12px" data-cy="generate-with-grid-text">Generate with grid</span>
           <v-btn-toggle v-model="isGrid" color="deep-purple-accent-3" rounded="0" group mandatory style="width: 280px;">
-            <v-btn :value='true' style="width: 50%;">Yes</v-btn>
-            <v-btn :value='false' style="width: 50%;">No</v-btn>
+            <v-btn :value='true' style="width: 50%;" data-cy="grid-yes-toggle">Yes</v-btn>
+            <v-btn :value='false' style="width: 50%;" data-cy="grid-no-toggle">No</v-btn>
           </v-btn-toggle>
         </div>
       </div>
@@ -56,16 +59,19 @@
     <div class="button-container">
       <!-- If newGridCreated is false, display the Cancel and Generate buttons -->
       <template v-if="!newGridCreated">
-        <button class="btn upload-button cancel" @click="navigateToHome">Cancel</button>
-        <button class="btn upload-button" @click="sendImageToServer">Generate</button>
+        <button class="btn upload-button cancel" @click="navigateToHome" data-cy="cancel-button">Cancel</button>
+        <button class="btn upload-button" @click="sendImageToServer" data-cy="generate-button">Generate</button>
       </template>
 
       <!-- If newGridCreated is true, display the Discard, Save, and Publish buttons -->
       <template v-else>
-        <button class="btn upload-button cancel" @click="removeImage">Discard</button>
-        <button class="btn upload-button" @click="sendImageToServer">Generate again</button>
-        <button class="btn upload-button" @click="showModal('save')" :disabled="!isLoggedIn">Save</button>
-        <button class="btn upload-button" @click="showModal('publish')" :disabled="!isLoggedIn">Publish</button>
+        <button class="btn upload-button cancel" @click="removeImage" data-cy="discard-button">Discard</button>
+        <button class="btn upload-button" @click="sendImageToServer" data-cy="generate-again-button">Generate
+          again</button>
+        <button class="btn upload-button" @click="showModal('save')" :disabled="!isLoggedIn"
+          data-cy="save-button">Save</button>
+        <button class="btn upload-button" @click="showModal('publish')" :disabled="!isLoggedIn"
+          data-cy="publish-button">Publish</button>
       </template>
     </div>
     <ConfirmationModal v-if="showConfirmationModal" :modalType="modalType" @close="showConfirmationModal = false"
@@ -76,10 +82,11 @@
         <p>The operation resulted in a success. What would you like to do next?</p>
         <div style="display: flex; justify-content: space-evenly; gap: 5px; margin-top: 50px;">
           <button @click="showSuccessModal = false" class="btn btn-primary mb-3 btn-yellow" type="button"
-            style="flex: 1; border-radius: 40px">
+            style="flex: 1; border-radius: 40px" data-cy="continue-generating-button">
             Continue Generating
           </button>
-          <button @click="viewPost" class="btn btn-primary mb-3 btn-orange" type="button" style="flex: 1; border-radius: 40px">
+          <button @click="viewPost" class="btn btn-primary mb-3 btn-orange" type="button"
+            style="flex: 1; border-radius: 40px" data-cy="view-post-button">
             View Post
           </button>
         </div>
@@ -192,7 +199,7 @@ async function addToStorageAndSaveAsGrid(isPrivate) {
 
       // Add a new document to the grids collection
       const docRef = await addDoc(collection(db, "Grids"), {
-        Author: doc(db, "Users", uid),        
+        Author: doc(db, "Users", uid),
         Comments: [],
         Content: downloadURL,
         IsPrivate: isPrivate,
@@ -608,41 +615,41 @@ input:focus {
 }
 
 .login-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .login-modal {
-    background-color: rgb(255, 255, 255);
-    padding: 40px 30px;
-    border-radius: 30px;
-    width: 400px;
+  background-color: rgb(255, 255, 255);
+  padding: 40px 30px;
+  border-radius: 30px;
+  width: 400px;
 }
 
 .modal-header {
-    margin-bottom: 40px;
-    font-size: 32px;
-    font-weight: 500;
-    justify-content: center;
-    align-items: center;
+  margin-bottom: 40px;
+  font-size: 32px;
+  font-weight: 500;
+  justify-content: center;
+  align-items: center;
 }
 
 .btn-orange {
-    background-color: #d95b00;
-    border-color: #d95b00;
-    color: white;
+  background-color: #d95b00;
+  border-color: #d95b00;
+  color: white;
 }
 
 .btn-yellow {
-    border-color: #fbc46a;
-    color: #fbc46a;
-    background-color: rgb(248, 248, 248);
+  border-color: #fbc46a;
+  color: #fbc46a;
+  background-color: rgb(248, 248, 248);
 }
 </style>
