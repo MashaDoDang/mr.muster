@@ -33,7 +33,7 @@
                         <p>{{ commentsAmount }} comments</p>
                         <div style="display: flex; gap: 5px; ">
                             <p> {{ likes }}</p>
-                            <button class="material-symbols-outlined like-icon" @click="toggleLike">
+                            <button data-cy="like-button" class="material-symbols-outlined like-icon" @click="toggleLike">
                                 <img :src="isLiked ? favoriteIcon : favoriteBorderIcon" alt="like-icon"
                                     style="height: 27px; margin-bottom: 3px;">
                             </button>
@@ -41,7 +41,7 @@
                     </div>
                 </div>
                 <div class="user-comment user-container">
-                    <RouterLink :to="`/user-profile/${authorID}`" class="author-id">
+                    <RouterLink data-cy="post-author-link" :to="`/user-profile/${authorID}`" class="author-id">
                         <p>@{{ gridAuthor }}</p>
                         <button @click="handleButtonClick" class="button-image">
                             <img :src="authorIcon" class="image-button">
@@ -51,17 +51,26 @@
             </div>
 
             <div class="comment-input-group" style="margin: 30px 0px;">
-                <textarea class="comment-input" placeholder="Add comment" v-model="newComment"></textarea>
-                <button class="material-symbols-outlined send-icon" @click="addComment">send</button>
+                <textarea data-cy="comment-input" class="comment-input" placeholder="Add comment" v-model="newComment"></textarea>
+                <button data-cy="send-button" class="material-symbols-outlined send-icon" @click="addComment">send</button>
             </div>
             <div class="comment-box">
                 <p v-if="!renderComments().length" style="margin-top: 40px;">Be the first to leave a comment!</p>
-                <Comment v-for="item in renderComments()" :key="item.comment.id" :comment="item.comment" :user="item"
-                    :userID="item.userID" :username="item.username" :userIcon="item.userIcon"
-                    :commentRef="item.commentRef" @commentDeleted="handleCommentDeleted"
-                    @removeCommentFromState="removeCommentFromState" @commentUpdated="handleCommentUpdated" />
+                <Comment
+                v-for="item in renderComments()"
+                :key="item.comment.id"
+                :comment="item.comment"
+                :user="item"
+                :userID="item.userID"
+                :username="item.username"
+                :userIcon="item.userIcon"
+                :commentRef="item.commentRef"
+                :index="item.index"
+                @commentDeleted="handleCommentDeleted"
+                @removeCommentFromState="removeCommentFromState"
+                @commentUpdated="handleCommentUpdated"
+                />
             </div>
-
         </div>
     </div>
     <DeleteModal v-if="showDeleteModal" @close="showDeleteModal = false" @delete="deleteGrid"></DeleteModal>
@@ -148,6 +157,21 @@ export default {
         });
     },
     methods: {
+        renderComments() {
+            if (!this.allComments) {
+                return [];
+            }
+            return Object.keys(this.allComments).map((commentID, index) => {
+                const comment = this.allComments[commentID];
+                if (!this.commentUsersIDs[commentID]) {
+                    return null;
+                }
+                const [userID, username, userIcon] = this.commentUsersIDs[commentID];
+                const user = this.allUsers[userID];
+                const commentRef = doc(db, 'Comments', commentID);
+                return { comment, user, userID, username, userIcon, commentRef, index };
+                }).filter(comment => comment !== null);
+        },
         async getGridInfo() {
             const gridID = this.$route.params.id;
             const gridRef = doc(db, "Grids", gridID);
@@ -209,21 +233,6 @@ export default {
             } else {
                 this.allUsers = {};
             }
-        },
-        renderComments() {
-            if (!this.allComments) {
-                return [];
-            }
-            return Object.keys(this.allComments).map(commentID => {
-                const comment = this.allComments[commentID];
-                if (!this.commentUsersIDs[commentID]) {
-                    return null;
-                }
-                const [userID, username, userIcon] = this.commentUsersIDs[commentID];
-                const user = this.allUsers[userID];
-                const commentRef = doc(db, 'Comments', commentID);
-                return { comment, user, userID, username, userIcon, commentRef };
-            }).filter(comment => comment !== null, userIcon => userIcon !== "");
         },
         async addComment() {
             this.newComment = this.newComment.trim();

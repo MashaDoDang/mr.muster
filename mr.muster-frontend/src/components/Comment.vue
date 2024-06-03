@@ -8,12 +8,12 @@
         <div class="comment">
             <div>
                 <div class="comment-content">
-                    <RouterLink :to="`/user-profile/${userID}`" class="username-comment">@{{ username }}</RouterLink>
+                    <RouterLink :data-cy="`comment-author-${index}`" :to="`/user-profile/${userID}`" class="username-comment">@{{ username }}</RouterLink>
                     <p>{{ date }}</p>
                     <div v-if="isCurrentUserAuthor || isCurrentUserAdmin" class="comment-icons"
                         style="display: flex; gap: 10px; align-items: center; margin-right: 10px;">
                         <i style="cursor: pointer;" class="fas fa-edit" @click="startEditComment"></i>
-                        <i style="cursor: pointer;" class="fas fa-trash-alt" @click="deleteComment"></i>
+                        <i :data-cy="`delete-comment-${index}`"  style="cursor: pointer;" class="fas fa-trash-alt" @click="deleteComment"></i>
                     </div>
                     <button @click="toggleReport" v-if="!isEditing && !isCurrentUserAuthor && isLoggedIn"
                         class="material-symbols-outlined">
@@ -47,7 +47,7 @@ import { doc, deleteDoc, arrayRemove, updateDoc, arrayUnion, getDoc } from "fire
 
 export default {
     name: "user-comment",
-    props: ["commentRef", "comment", "user", "userID", "username", "userIcon"],
+    props: ["commentRef", "comment", "user", "userID", "username", "userIcon", "index"],
     data() {
         return {
             date: '',
