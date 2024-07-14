@@ -53,6 +53,6 @@ This project is an image pixelation web application developed as the final proje
 ![Log In](screenshots/login_modal.jpg)
 
 ## Authors and acknowledgment
-Wiktor Stasiak
-Katarzyna Wysokińska
-Do Danh Kha Mi
+- Wiktor Stasiak
+- Katarzyna Wysokińska
+- Do Danh Kha Mi
